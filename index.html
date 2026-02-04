@@ -2111,23 +2111,28 @@
             return cases[category] || cases['Others'];
         }
 
-        // Extract AI One-Liner (Robust)
+        // Extract AI One-Liner (Ultra Robust)
         function extractAIOneLiner(markdown) {
             if (!markdown) return null;
 
-            // 1. Try explicit "One Liner" tag (v2 format) - flexible regex
-            // Matches: "- **한 줄 정의**: ...", "- 한 줄 정의 : ...", etc.
-            const tagMatch = markdown.match(/(?:한\s*줄\s*정의|한\s*줄\s*요약).*?[:：]\s*(.*)/i);
-            if (tagMatch && tagMatch[1]) return tagMatch[1].trim().replace(/\*\*/g, '');
+            // Strategy 1: Explicit keyword search (handling bolding, spaces, colons)
+            // Example: "- **한 줄 정의**: ..." or "한 줄 요약 : ..."
+            const keyMatch = markdown.match(/[\-\*]?\s*(?:\*\*)?\s*(?:한\s*줄\s*정의|한\s*줄\s*요약|핵심\s*가치)\s*(?:\*\*)?.*?[:：]\s*(.*)$/m);
+            if (keyMatch && keyMatch[1]) {
+                return keyMatch[1].replace(/\*\*/g, '').trim();
+            }
 
-            // 2. Fallback: Try first bullet under "Who & Why" section
-            // Looks for "## 🚀 핵심 가치" line, then finds the next line starting with "-"
-            const sectionMatch = markdown.match(/##\s*🚀\s*핵심\s*가치[\s\S]*?(?:-|\*)\s*(.*)/);
-            if (sectionMatch && sectionMatch[1]) return sectionMatch[1].trim().replace(/\*\*/g, '');
+            // Strategy 2: First bullet point under "Who & Why" section (Section Context)
+            // Finds "## ... Who & Why" and captures the immediate next bullet
+            const sectionMatch = markdown.match(/##\s*🚀?\s*.*?(?:Who\s*&\s*Why|핵심\s*가치).*?[\r\n]+\s*[\-\*]\s*(.*)$/m);
+            if (sectionMatch && sectionMatch[1]) {
+                // Remove potential redundant label like "**한 줄 정의**: " inside the bullet
+                return sectionMatch[1].replace(/^(?:\*\*)?(?:한\s*줄\s*정의|한\s*줄\s*요약).*?[:：]\s*/, '').replace(/\*\*/g, '').trim();
+            }
 
-            // 3. Fallback: Try "Summary" or generic Korean summary (legacy)
-            const summaryMatch = markdown.match(/(?:요약|개요).*?[:：]\s*(.*)/i);
-            if (summaryMatch && summaryMatch[1]) return summaryMatch[1].trim();
+            // Strategy 3: Any line starting with "한 줄 정의" regardless of section
+            const looseMatch = markdown.match(/한\s*줄\s*정의.*?[:：]\s*(.*)/);
+            if (looseMatch && looseMatch[1]) return looseMatch[1].replace(/\*\*/g, '').trim();
 
             return null;
         }
