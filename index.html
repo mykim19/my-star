@@ -1,0 +1,2707 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Stars 분석 & 활용 가이드</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        /* Graph View */
+        .graph-container {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            background: #FAFAFA;
+            display: none;
+            margin-top: 20px;
+        }
+
+        .graph-container.show {
+            display: block;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .view-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .view-btn.active {
+            background: #764ba2;
+            color: white;
+            border-color: #764ba2;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .settings-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Search Form */
+        .search-form {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-input-wrap {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 16px 20px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 12px;
+            outline: none;
+        }
+
+        .search-input:focus {
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3);
+        }
+
+        .search-btn {
+            padding: 16px 30px;
+            background: white;
+            color: #764ba2;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .search-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .error-msg {
+            color: #ffcccc;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .error-msg.show {
+            display: block;
+        }
+
+        /* Stats */
+        .stats-section {
+            background: white;
+            padding: 30px 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: none;
+        }
+
+        .stats-section.show {
+            display: block;
+        }
+
+        .stats-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .stat-value.purple {
+            color: #764ba2;
+        }
+
+        .stat-value.blue {
+            color: #3b82f6;
+        }
+
+        .stat-value.green {
+            color: #22c55e;
+        }
+
+        .stat-value.orange {
+            color: #f97316;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        /* Filter */
+        .filter-section {
+            background: #eee;
+            padding: 20px;
+            display: none;
+        }
+
+        .filter-section.show {
+            display: block;
+        }
+
+        .filter-wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .filter-input:focus {
+            border-color: #764ba2;
+        }
+
+        .sort-select {
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            background: white;
+        }
+
+        /* Category Chips */
+        .category-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chip {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid #ddd;
+            background: white;
+            color: #555;
+            transition: all 0.2s;
+        }
+
+        .chip:hover {
+            transform: scale(1.05);
+        }
+
+        .chip.active {
+            background: #764ba2;
+            color: white;
+            border-color: #764ba2;
+        }
+
+        /* Main Content */
+        .main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Loading */
+        .loading-state {
+            display: none;
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading-state.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #eee;
+            border-top-color: #764ba2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: #888;
+        }
+
+        .empty-state.hide {
+            display: none;
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h2 {
+            font-size: 1.5rem;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        /* Repos Grid */
+        .repos-grid {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .repos-grid.show {
+            display: grid;
+        }
+
+        @media (max-width: 1024px) {
+            .repos-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .repos-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Repo Card */
+        .repo-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .repo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+        }
+
+        .repo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .repo-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #333;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            margin-right: 10px;
+        }
+
+        .repo-stars {
+            color: #f59e0b;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .repo-desc {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.5;
+        }
+
+        .repo-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .language-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .language-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .repo-owner {
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        .repo-category {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .category-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #f3e8ff;
+            color: #764ba2;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        /* Load More */
+        .load-more {
+            text-align: center;
+            margin-top: 30px;
+            display: none;
+        }
+
+        .load-more.show {
+            display: block;
+        }
+
+        .load-more-btn {
+            padding: 14px 40px;
+            background: #764ba2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .load-more-btn:hover {
+            background: #5a3a7e;
+        }
+
+        /* Modal */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-backdrop.show {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .modal-owner {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 4px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #999;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .modal-close:hover {
+            color: #555;
+        }
+
+        .modal-content {
+            padding: 24px;
+            overflow-y: auto;
+            max-height: calc(90vh - 180px);
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .modal-btn.github {
+            background: #333;
+            color: white;
+        }
+
+        .modal-btn.github:hover {
+            background: #111;
+        }
+
+        .modal-btn.homepage {
+            background: #764ba2;
+            color: white;
+        }
+
+        .modal-btn.homepage:hover {
+            background: #5a3a7e;
+        }
+
+        .modal-btn.hide {
+            display: none;
+        }
+
+        /* Guide Content */
+        .guide-category {
+            margin-bottom: 24px;
+        }
+
+        /* Mobile Optimization */
+        @media (max-width: 640px) {
+            .header {
+                padding: 40px 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .header p {
+                font-size: 0.95rem;
+            }
+
+            .search-form {
+                flex-direction: column;
+            }
+
+            .search-btn {
+                width: 100%;
+            }
+
+            .modal-content {
+                padding: 16px;
+            }
+
+            .modal-header {
+                padding: 16px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .guide-category-tag {
+            display: inline-block;
+            padding: 6px 14px;
+            background: #f3e8ff;
+            color: #764ba2;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .guide-section {
+            margin-bottom: 24px;
+        }
+
+        .guide-section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .guide-section-title .icon {
+            font-size: 1rem;
+        }
+
+        .guide-section-title .icon.blue {
+            color: #3b82f6;
+        }
+
+        .guide-section-title .icon.green {
+            color: #22c55e;
+        }
+
+        .guide-section-title .icon.yellow {
+            color: #f59e0b;
+        }
+
+        .guide-section-title .icon.purple {
+            color: #764ba2;
+        }
+
+        .guide-text {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .guide-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .guide-stat {
+            background: #f9f9f9;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .guide-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .guide-stat-value.yellow {
+            color: #f59e0b;
+        }
+
+        .guide-stat-value.blue {
+            color: #3b82f6;
+        }
+
+        .guide-stat-value.green {
+            color: #22c55e;
+        }
+
+        .guide-stat-label {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .guide-code {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+        }
+
+        .guide-code .comment {
+            color: #6a9955;
+        }
+
+        .guide-topics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .guide-topic {
+            padding: 6px 12px;
+            background: #f0f0f0;
+            color: #555;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .guide-usecases {
+            list-style: none;
+        }
+
+        .guide-usecase {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .guide-usecase .check {
+            color: #22c55e;
+            margin-top: 2px;
+        }
+
+        .guide-updated {
+            font-size: 0.85rem;
+            color: #999;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Health Badge */
+        .health-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .health-badge.active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .health-badge.stable {
+            background: #e0f2fe;
+            color: #075985;
+        }
+
+        .health-badge.stale {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .health-badge.archived {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }
+
+        .health-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .health-badge.active .health-dot {
+            background: #166534;
+        }
+
+        .health-badge.stable .health-dot {
+            background: #075985;
+        }
+
+        .health-badge.stale .health-dot {
+            background: #991b1b;
+        }
+
+        .health-badge.archived .health-dot {
+            background: #64748b;
+        }
+
+        /* User Data Section in Modal */
+        .user-data-section {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 24px;
+        }
+
+        .user-data-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .save-btn {
+            background: #764ba2;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            float: right;
+        }
+
+        .save-btn:hover {
+            background: #5a3a7e;
+        }
+
+        /* Tags in Card */
+        .purpose-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #e0e7ff;
+            color: #4338ca;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        /* Spinner for Button */
+        .spinner-sm {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 5px;
+        }
+
+        .ai-loading {
+            text-align: center;
+            padding: 20px;
+            color: #db2777;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* AI Section in Modal */
+        .ai-section {
+            margin-top: 20px;
+            background: #fdf2f8;
+            /* pink-50 */
+            border: 1px solid #fbcfe8;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .ai-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .ai-title {
+            font-weight: 700;
+            color: #db2777;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ai-btn {
+            background: #db2777;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        .ai-btn:hover {
+            background: #be185d;
+        }
+
+        .ai-btn:disabled {
+            background: #f9a8d4;
+            cursor: not-allowed;
+        }
+
+        .ai-content {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #374151;
+            white-space: pre-wrap;
+        }
+
+        .markdown-prose ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+
+        .markdown-prose li {
+            margin-bottom: 4px;
+        }
+
+        .markdown-prose strong {
+            color: #831843;
+        }
+
+        /* Improved Markdown Styles */
+        .md-h1 {
+            font-size: 1.1rem;
+            margin: 15px 0 8px 0;
+            color: #db2777;
+            border-bottom: 2px solid #fce7f3;
+            padding-bottom: 4px;
+        }
+
+        .md-h2 {
+            font-size: 1.0rem;
+            margin: 12px 0 6px 0;
+            color: #9d174d;
+            font-weight: 700;
+        }
+
+        .md-h3 {
+            font-size: 0.95rem;
+            margin: 10px 0 5px 0;
+            color: #4b5563;
+            font-weight: 700;
+        }
+
+        .code-block {
+            background: #1e293b;
+            border-radius: 6px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .code-header {
+            background: #334155;
+            color: #e2e8f0;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-block pre {
+            margin: 0;
+            padding: 12px;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #e2e8f0;
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: 1px solid #64748b;
+            color: #cbd5e1;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+
+        .copy-btn:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <button class="settings-btn" onclick="openSettings()">
+                ⚙️ API 설정
+            </button>
+            <h1>⭐ GitHub Stars 분석기</h1>
+            <p>즐겨찾기한 레포지토리를 분석하고 활용 방법을 알아보세요</p>
+
+            <!-- Search Form -->
+            <div class="search-form">
+                <div class="search-input-wrap">
+                    <input type="text" id="usernameInput" placeholder="사용자명 또는 GitHub URL (예: mykim19)"
+                        class="search-input" list="historyList" autocomplete="off">
+                    <datalist id="historyList"></datalist>
+                </div>
+                <button id="searchBtn" class="search-btn">
+                    🔍 분석하기
+                </button>
+            </div>
+            <p id="errorMsg" class="error-msg"></p>
+        </div>
+    </header>
+
+    <!-- Stats Section -->
+    <section id="statsSection" class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value purple" id="totalStars">0</div>
+                <div class="stat-label">총 Stars</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value blue" id="totalLanguages">0</div>
+                <div class="stat-label">프로그래밍 언어</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value green" id="totalTopics">0</div>
+                <div class="stat-label">토픽/태그</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value orange" id="avgStars">0</div>
+                <div class="stat-label">평균 Stars</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filter Section -->
+    <section id="filterSection" class="filter-section">
+        <div class="filter-wrap">
+            <div class="filter-row">
+                <input type="text" id="filterInput" placeholder="레포지토리 검색..." class="filter-input">
+                <select id="sortSelect" class="sort-select">
+                    <option value="starred_at">최근 Star 순</option>
+                    <option value="stars">인기순 (Stars)</option>
+                    <option value="updated">최근 업데이트 순</option>
+                    <option value="name">이름순</option>
+                </select>
+                <select id="purposeFilter" class="sort-select">
+                    <option value="all">모든 목적</option>
+                    <option value="reference">📚 참고용</option>
+                    <option value="to-try">🧪 써볼 것</option>
+                    <option value="idea">💡 아이디어</option>
+                    <option value="alternative">🔄 대체재 조사</option>
+                    <option value="using">🛠 사용 중</option>
+                    <option value="memo">📝 메모 있음</option>
+                </select>
+            </div>
+            <div id="categoryChips" class="category-chips">
+                <button class="chip active" data-category="all">전체</button>
+            </div>
+            <!-- Collections Bar -->
+            <div id="collectionsBar" class="collections-bar" style="display:none;"></div>
+
+            <div class="view-toggle">
+                <button class="view-btn active" id="viewGridBtn" onclick="switchView('grid')">▦ 그리드</button>
+                <button class="view-btn" id="viewGraphBtn" onclick="switchView('graph')">🕸️ 관계망</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Loading State -->
+        <div id="loadingState" class="loading-state">
+            <div class="spinner"></div>
+            <p>Stars 데이터를 불러오는 중...</p>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state">
+            <div class="empty-icon">⭐</div>
+            <h2>GitHub Stars를 분석해보세요</h2>
+            <p>위에 GitHub 사용자명을 입력하면 즐겨찾기한 레포지토리를 분석합니다</p>
+        </div>
+
+        <!-- Repos Grid -->
+        <div id="reposGrid" class="repos-grid"></div>
+        <div id="graphContainer" class="graph-container"></div>
+
+        <!-- Load More -->
+        <div id="loadMoreSection" class="load-more">
+            <button id="loadMoreBtn" class="load-more-btn">+ 더 불러오기</button>
+        </div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal-backdrop">
+        <div class="modal" style="max-width: 500px;">
+            <div class="modal-header">
+                <div class="modal-title">⚙️ 설정</div>
+                <button id="closeSettings" class="modal-close">✕</button>
+            </div>
+            <div class="modal-content">
+                <div class="form-group">
+                    <label class="form-label">AI Provider 선택</label>
+                    <select id="aiProviderSelect" class="form-select" style="width: 100%; margin-bottom: 15px;"
+                        onchange="toggleApiKeyInputs()">
+                        <option value="gemini">Google Gemini</option>
+                        <option value="deepseek">DeepSeek V3</option>
+                    </select>
+                </div>
+
+                <div id="geminiInputSection">
+                    <div class="form-group">
+                        <label class="form-label">Google Gemini API Key</label>
+                        <input type="password" id="apiKeyInput" class="filter-input" placeholder="Gemini API Key 입력"
+                            style="width: 100%;">
+                        <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">
+                            <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #667eea;">키
+                                발급받기</a>
+                        </p>
+                    </div>
+                </div>
+
+                <div id="deepseekInputSection" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">DeepSeek API Key</label>
+                        <input type="password" id="deepseekKeyInput" class="filter-input"
+                            placeholder="DeepSeek API Key 입력" style="width: 100%;">
+                        <p style="font-size: 0.8rem; color: #666; margin-top: 5px;">
+                            <a href="https://platform.deepseek.com/api_keys" target="_blank" style="color: #667eea;">키
+                                발급받기</a>
+                        </p>
+                    </div>
+                </div>
+
+                <p
+                    style="font-size: 0.8rem; color: #999; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+                    키는 브라우저 LocalStorage에만 저장되며 서버로 전송되지 않습니다.
+                </p>
+
+                <!-- Data Management -->
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+                    <label class="form-label">💾 데이터 백업 및 복구</label>
+                    <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">
+                        저장된 태그, 메모, 컬렉션, AI 분석 내용을 파일로 저장하거나 불러옵니다.
+                    </p>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="StorageManager.exportData()" class="modal-btn"
+                            style="background:#4b5563; flex:1;">
+                            📤 백업 다운로드
+                        </button>
+                        <button onclick="document.getElementById('importFile').click()" class="modal-btn"
+                            style="background:#6b7280; flex:1;">
+                            📥 복구 (불러오기)
+                        </button>
+                        <input type="file" id="importFile" style="display:none" accept=".json"
+                            onchange="handleImport(this)">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button onclick="saveApiKey()" class="modal-btn github"
+                    style="width: 100%; text-align: center;">저장하기</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="detailModal" class="modal-backdrop">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <div id="modalTitle" class="modal-title"></div>
+                    <div id="modalOwner" class="modal-owner"></div>
+                </div>
+                <button id="closeModal" class="modal-close">✕</button>
+            </div>
+            <div id="modalContent" class="modal-content"></div>
+            <div class="modal-footer">
+                <a id="modalGithubLink" href="#" target="_blank" class="modal-btn github">
+                    GitHub에서 보기
+                </a>
+                <a id="modalHomepage" href="#" target="_blank" class="modal-btn homepage hide">
+                    홈페이지 방문
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Language Colors
+        const languageColors = {
+            JavaScript: '#f1e05a',
+            TypeScript: '#3178c6',
+            Python: '#3572A5',
+            Java: '#b07219',
+            'C++': '#f34b7d',
+            C: '#555555',
+            'C#': '#178600',
+            Go: '#00ADD8',
+            Rust: '#dea584',
+            Ruby: '#701516',
+            PHP: '#4F5D95',
+            Swift: '#F05138',
+            Kotlin: '#A97BFF',
+            Dart: '#00B4AB',
+            Scala: '#c22d40',
+            Shell: '#89e051',
+            HTML: '#e34c26',
+            CSS: '#563d7c',
+            Vue: '#41b883',
+            Jupyter: '#DA5B0B',
+            R: '#198CE7',
+            Lua: '#000080',
+            Elixir: '#6e4a7e',
+            Haskell: '#5e5086',
+            Clojure: '#db5855',
+            Erlang: '#B83998'
+        };
+
+        // Category Detection
+        const categoryKeywords = {
+            'AI/ML': ['machine-learning', 'deep-learning', 'ai', 'neural', 'tensorflow', 'pytorch', 'ml', 'nlp', 'gpt', 'llm', 'transformer', 'bert', 'chatgpt', 'openai'],
+            'Frontend': ['react', 'vue', 'angular', 'frontend', 'css', 'ui', 'component', 'tailwind', 'bootstrap', 'svelte', 'nextjs', 'nuxt'],
+            'Backend': ['backend', 'api', 'server', 'express', 'django', 'flask', 'spring', 'fastapi', 'graphql', 'rest', 'microservice'],
+            'DevOps': ['docker', 'kubernetes', 'ci-cd', 'devops', 'terraform', 'ansible', 'jenkins', 'github-actions', 'aws', 'cloud'],
+            'Database': ['database', 'sql', 'nosql', 'mongodb', 'postgresql', 'mysql', 'redis', 'elasticsearch', 'orm'],
+            'Mobile': ['ios', 'android', 'react-native', 'flutter', 'mobile', 'swift', 'kotlin'],
+            'Tools': ['cli', 'tool', 'utility', 'productivity', 'automation', 'editor', 'terminal'],
+            'Security': ['security', 'crypto', 'encryption', 'auth', 'oauth', 'jwt', 'vulnerability'],
+            'Data': ['data', 'analytics', 'visualization', 'pandas', 'numpy', 'jupyter', 'dashboard']
+        };
+
+        // State
+        let allRepos = [];
+        let filteredRepos = [];
+        let currentPage = 1;
+
+        let isLoading = false;
+        let currentCategory = 'all';
+        let currentPurpose = 'all';
+        let currentCollection = 'all';
+        let currentView = 'grid'; // 'grid' or 'graph'
+        const perPage = 100;
+        const displayPerPage = 12;
+
+        // --- Storage Manager ---
+        const StorageManager = {
+            KEY_METADATA: 'github_stars_metadata',
+            KEY_COLLECTIONS: 'github_stars_collections',
+
+            getMetadata() {
+                try {
+                    return JSON.parse(localStorage.getItem(this.KEY_METADATA)) || {};
+                } catch { return {}; }
+            },
+
+            getCollections() {
+                try {
+                    // List of { id, name, description }
+                    return JSON.parse(localStorage.getItem(this.KEY_COLLECTIONS)) || [];
+                } catch { return []; }
+            },
+
+            saveMetadata(data) {
+                localStorage.setItem(this.KEY_METADATA, JSON.stringify(data));
+            },
+
+            saveCollections(data) {
+                localStorage.setItem(this.KEY_COLLECTIONS, JSON.stringify(data));
+            },
+
+
+
+            saveApiKey(key) {
+                localStorage.setItem('gemini_api_key', key);
+            },
+
+            getApiKey() {
+                return localStorage.getItem('gemini_api_key');
+            },
+
+            saveDeepSeekKey(key) {
+                localStorage.setItem('deepseek_api_key', key);
+            },
+
+            getDeepSeekKey() {
+                return localStorage.getItem('deepseek_api_key');
+            },
+
+            saveProvider(provider) {
+                localStorage.setItem('ai_provider', provider);
+            },
+
+            getProvider() {
+                return localStorage.getItem('ai_provider') || 'gemini';
+            },
+
+            getRepoData(repoId) {
+                const data = this.getMetadata();
+                return data[repoId] || { purpose: '', note: '', collectionIds: [] };
+            },
+
+            // --- Data Management (Export/Import) ---
+            exportData() {
+                const data = {
+                    metadata: this.getMetadata(),
+                    collections: this.getCollections(),
+                    history: this.getSearchHistory(),
+                    aiProvider: this.getProvider(),
+                    timestamp: new Date().toISOString()
+                };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `github-stars-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            },
+
+            importData(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            if (data.metadata) this.saveMetadata(data.metadata);
+                            if (data.collections) this.saveCollections(data.collections);
+                            if (data.history) localStorage.setItem('github_stars_history', JSON.stringify(data.history));
+                            if (data.aiProvider) this.saveProvider(data.aiProvider);
+                            resolve(true);
+                        } catch (err) {
+                            reject(err);
+                        }
+                    };
+                    reader.readAsText(file);
+                });
+            },
+            updateRepoData(repoId, updates) {
+                const data = this.getMetadata();
+                data[repoId] = { ...(data[repoId] || {}), ...updates };
+                this.saveMetadata(data);
+                return data[repoId];
+            },
+
+            createCollection(name) {
+                const list = this.getCollections();
+                const newColl = { id: 'col_' + Date.now(), name, description: '' };
+                list.push(newColl);
+                this.saveCollections(list);
+                return newColl;
+            },
+
+            // Utility: Get collections for a repo
+            getRepoCollections(repoId) {
+                const repoData = this.getRepoData(repoId);
+                const collectionIds = repoData.collectionIds || [];
+                const allColls = this.getCollections();
+                return allColls.filter(c => collectionIds.includes(c.id));
+            },
+
+            // --- Search History ---
+            getSearchHistory() {
+                try {
+                    return JSON.parse(localStorage.getItem('github_stars_history')) || [];
+                } catch { return []; }
+            },
+
+            saveSearchHistory(username) {
+                const list = this.getSearchHistory();
+                // Remove existing if any (to move to top)
+                const filtered = list.filter(u => u.toLowerCase() !== username.toLowerCase());
+                filtered.unshift(username);
+                // Keep max 5
+                const result = filtered.slice(0, 5);
+                localStorage.setItem('github_stars_history', JSON.stringify(result));
+            }
+        };
+
+        // Update History Datalist
+        function updateHistoryList() {
+            const list = StorageManager.getSearchHistory();
+            const datalist = document.getElementById('historyList');
+            if (datalist) {
+                datalist.innerHTML = list.map(u => `<option value="${u}">`).join('');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateHistoryList();
+            // Auto-fill last user
+            const list = StorageManager.getSearchHistory();
+            if (list.length > 0) {
+                document.getElementById('usernameInput').value = list[0];
+            }
+        });
+
+        // DOM Elements
+        const usernameInput = document.getElementById('usernameInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const errorMsg = document.getElementById('errorMsg');
+        const statsSection = document.getElementById('statsSection');
+        const filterSection = document.getElementById('filterSection');
+        const loadingState = document.getElementById('loadingState');
+        const emptyState = document.getElementById('emptyState');
+        const reposGrid = document.getElementById('reposGrid');
+        const loadMoreSection = document.getElementById('loadMoreSection');
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        const filterInput = document.getElementById('filterInput');
+        const sortSelect = document.getElementById('sortSelect');
+        const purposeFilter = document.getElementById('purposeFilter');
+        const categoryChips = document.getElementById('categoryChips');
+        const collectionsBar = document.getElementById('collectionsBar');
+        const detailModal = document.getElementById('detailModal');
+
+        const closeModal = document.getElementById('closeModal');
+        // Settings
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettings = document.getElementById('closeSettings');
+        const apiKeyInput = document.getElementById('apiKeyInput'); // Gemini
+        const deepseekKeyInput = document.getElementById('deepseekKeyInput');
+        const aiProviderSelect = document.getElementById('aiProviderSelect');
+        const geminiInputSection = document.getElementById('geminiInputSection');
+        const deepseekInputSection = document.getElementById('deepseekInputSection');
+
+        // Event Listeners
+        searchBtn.addEventListener('click', handleSearch);
+        usernameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSearch();
+        });
+        filterInput.addEventListener('input', debounce(handleFilter, 300));
+        sortSelect.addEventListener('change', handleSort);
+        purposeFilter.addEventListener('change', handlePurposeFilter);
+        loadMoreBtn.addEventListener('click', loadMore);
+        closeModal.addEventListener('click', () => detailModal.classList.remove('show'));
+        detailModal.addEventListener('click', (e) => {
+            if (e.target === detailModal) detailModal.classList.remove('show');
+        });
+
+        // Settings Events
+        closeSettings.addEventListener('click', () => settingsModal.classList.remove('show'));
+        settingsModal.addEventListener('click', (e) => {
+            if (e.target === settingsModal) settingsModal.classList.remove('show');
+        });
+
+        // Toggle API Key Input Visibility
+        window.toggleApiKeyInputs = function () {
+            const provider = aiProviderSelect.value;
+            if (provider === 'gemini') {
+                geminiInputSection.style.display = 'block';
+                deepseekInputSection.style.display = 'none';
+            } else {
+                geminiInputSection.style.display = 'none';
+                deepseekInputSection.style.display = 'block';
+            }
+        };
+
+        window.openSettings = function () {
+            // Load saved values
+            const savedProvider = StorageManager.getProvider();
+            const savedGemini = StorageManager.getApiKey();
+            const savedDeepSeek = StorageManager.getDeepSeekKey();
+
+            aiProviderSelect.value = savedProvider;
+            apiKeyInput.value = savedGemini || '';
+            deepseekKeyInput.value = savedDeepSeek || '';
+
+            toggleApiKeyInputs(); // Refresh UI State
+            settingsModal.classList.add('show');
+        };
+
+        window.saveApiKey = function () {
+            const provider = aiProviderSelect.value;
+            const geminiKey = apiKeyInput.value.trim();
+            const deepseekKey = deepseekKeyInput.value.trim();
+
+            if (provider === 'gemini' && !geminiKey) {
+                alert('Gemini API Key를 입력해주세요.');
+                return;
+            }
+            if (provider === 'deepseek' && !deepseekKey) {
+                alert('DeepSeek API Key를 입력해주세요.');
+                return;
+            }
+
+            // Save All
+            StorageManager.saveProvider(provider);
+            if (geminiKey) StorageManager.saveApiKey(geminiKey);
+            if (deepseekKey) StorageManager.saveDeepSeekKey(deepseekKey);
+
+            settingsModal.classList.remove('show');
+            alert('설정이 저장되었습니다.');
+        };
+
+        // Handle Import
+        window.handleImport = async function (input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            try {
+                await StorageManager.importData(file);
+                alert('데이터가 성공적으로 복구되었습니다. 페이지를 새로고침합니다.');
+                window.location.reload();
+            } catch (e) {
+                alert('파일을 불러오는 중 오류가 발생했습니다.');
+                console.error(e);
+            }
+            input.value = ''; // Reset
+        };
+
+        // Debounce function
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // Fetch Stars
+        async function fetchStars(username, page = 1) {
+            const response = await fetch(
+                `https://api.github.com/users/${username}/starred?per_page=${perPage}&page=${page}`,
+                {
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error('사용자를 찾을 수 없습니다');
+                }
+                if (response.status === 403) {
+                    throw new Error('API 호출 제한에 도달했습니다. 잠시 후 다시 시도해주세요.');
+                }
+                throw new Error('데이터를 가져오는 중 오류가 발생했습니다');
+            }
+
+            return response.json();
+        }
+
+        // Fetch all stars with pagination
+        async function fetchAllStars(username) {
+            let page = 1;
+            let allStars = [];
+            let hasMore = true;
+
+            while (hasMore) {
+                const stars = await fetchStars(username, page);
+                allStars = allStars.concat(stars);
+
+                if (stars.length < perPage) {
+                    hasMore = false;
+                } else {
+                    page++;
+                }
+
+                // Update loading message
+                document.querySelector('#loadingState p').textContent =
+                    `${allStars.length}개의 Stars를 불러왔습니다...`;
+            }
+
+            return allStars;
+        }
+
+        // Detect category for a repo
+        function detectCategory(repo) {
+            const searchText = [
+                repo.name,
+                repo.description || '',
+                ...(repo.topics || [])
+            ].join(' ').toLowerCase();
+
+            for (const [category, keywords] of Object.entries(categoryKeywords)) {
+                if (keywords.some(kw => searchText.includes(kw))) {
+                    return category;
+                }
+            }
+
+            return 'Others';
+        }
+
+        // Analyze repos
+        function analyzeRepos(repos) {
+            const languages = new Set();
+            const topics = new Set();
+            let totalStars = 0;
+            const categories = {};
+
+            repos.forEach(repo => {
+                if (repo.language) languages.add(repo.language);
+                (repo.topics || []).forEach(t => topics.add(t));
+                totalStars += repo.stargazers_count;
+
+                const category = detectCategory(repo);
+                repo._category = category;
+                categories[category] = (categories[category] || 0) + 1;
+            });
+
+            return {
+                totalRepos: repos.length,
+                languages: languages.size,
+                topics: topics.size,
+                avgStars: repos.length > 0 ? Math.round(totalStars / repos.length) : 0,
+                categories
+            };
+        }
+
+        // Generate usage guide
+        function generateGuide(repo) {
+            const lang = repo.language || 'Unknown';
+            const topics = repo.topics || [];
+            const category = repo._category || 'Others';
+
+            let guide = '';
+
+            // Category Badge & Health
+            const health = calculateRepoHealth(repo);
+            guide += `<div class="guide-category" style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="guide-category-tag">${category}</span>
+                <span class="health-badge ${health.color}">
+                    <span class="health-dot"></span> 유지보수: ${health.label}
+                </span>
+            </div>`;
+
+            // Description
+            if (repo.description) {
+                guide += `<div class="guide-section">
+                    <h3 class="guide-section-title">
+                        <span class="icon blue">ℹ️</span> 소개
+                    </h3>
+                    <p class="guide-text">${repo.description}</p>
+                </div>`;
+            }
+
+            // Quick Stats
+            guide += `<div class="guide-section">
+                <div class="guide-stats">
+                    <div class="guide-stat">
+                        <div class="guide-stat-value yellow">⭐ ${formatNumber(repo.stargazers_count)}</div>
+                        <div class="guide-stat-label">Stars</div>
+                    </div>
+                    <div class="guide-stat">
+                        <div class="guide-stat-value blue">🔀 ${formatNumber(repo.forks_count)}</div>
+                        <div class="guide-stat-label">Forks</div>
+                    </div>
+                    <div class="guide-stat">
+                        <div class="guide-stat-value green">👁 ${formatNumber(repo.watchers_count)}</div>
+                        <div class="guide-stat-label">Watchers</div>
+                    </div>
+                </div>
+            </div>`;
+
+            // Quick Start Guide
+            guide += `<div class="guide-section">
+                <h3 class="guide-section-title">
+                    <span class="icon green">🚀</span> 빠른 시작
+                </h3>
+                <div class="guide-code">`;
+
+            // Generate install command based on language/category
+            if (lang === 'JavaScript' || lang === 'TypeScript') {
+                guide += `<div class="comment"># npm으로 설치</div>
+                    <div>npm install ${repo.name}</div>
+                    <br>
+                    <div class="comment"># 또는 yarn</div>
+                    <div>yarn add ${repo.name}</div>`;
+            } else if (lang === 'Python') {
+                guide += `<div class="comment"># pip로 설치</div>
+                    <div>pip install ${repo.name}</div>`;
+            } else if (lang === 'Go') {
+                guide += `<div class="comment"># Go 모듈로 설치</div>
+                    <div>go get github.com/${repo.full_name}</div>`;
+            } else if (lang === 'Rust') {
+                guide += `<div class="comment"># Cargo로 설치</div>
+                    <div>cargo add ${repo.name}</div>`;
+            } else if (lang === 'Ruby') {
+                guide += `<div class="comment"># Gem으로 설치</div>
+                    <div>gem install ${repo.name}</div>`;
+            } else {
+                guide += `<div class="comment"># Git으로 클론</div>
+                    <div>git clone ${repo.clone_url}</div>
+                    <div>cd ${repo.name}</div>`;
+            }
+
+            guide += `</div></div>`;
+
+            // Topics
+            if (topics.length > 0) {
+                guide += `<div class="guide-section">
+                    <h3 class="guide-section-title">
+                        <span class="icon purple">🏷️</span> 관련 토픽
+                    </h3>
+                    <div class="guide-topics">
+                        ${topics.map(t => `<span class="guide-topic">${t}</span>`).join('')}
+                    </div>
+                </div>`;
+            }
+
+            // Use Cases based on category
+            guide += `<div class="guide-section">
+                <h3 class="guide-section-title">
+                    <span class="icon yellow">💡</span> 활용 방법
+                </h3>
+                <ul class="guide-usecases">`;
+
+            const useCases = getUseCases(category, repo);
+            useCases.forEach(uc => {
+                guide += `<li class="guide-usecase">
+                    <span class="check">✓</span>
+                    <span>${uc}</span>
+                </li>`;
+            });
+
+            guide += `</ul></div>`;
+
+            // Last Updated
+            guide += `<div class="guide-updated">
+                🕐 마지막 업데이트: ${new Date(repo.updated_at).toLocaleDateString('ko-KR')}
+            </div>`;
+
+            return guide;
+        }
+
+        // Render User Data Section (Purpose & Notes & Collections)
+        function renderUserDataSection(repo) {
+            const userData = repo.userData || { purpose: '', note: '', collectionIds: [] };
+            const allCollections = StorageManager.getCollections();
+            const repoCollIds = userData.collectionIds || [];
+
+            let collectionsHtml = allCollections.map(col => {
+                const isChecked = repoCollIds.includes(col.id) ? 'checked' : '';
+                return `
+                    <label style="display:inline-flex; align-items:center; margin-right:10px; margin-bottom:5px; font-size:0.9rem; padding:4px 8px; background:#fff; border:1px solid #ddd; border-radius:4px;">
+                        <input type="checkbox" value="${col.id}" ${isChecked} onchange="toggleCollection('${repo.id}', '${col.id}', this.checked)" style="margin-right:5px;">
+                        ${col.name}
+                    </label>
+                `;
+            }).join('');
+
+            if (allCollections.length === 0) {
+                collectionsHtml = `<span style="color:#888; font-size:0.85rem;">아직 컬렉션이 없습니다. <br>👉 'AI 도구', '프론트엔드' 같은 컬렉션을 만들어 분류해보세요.</span>`;
+            }
+
+            return `
+                <div class="user-data-section">
+                    <div class="user-data-title">
+                        <span>🏷️ 나의 노트 & 분류</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">이 Repo를 Star한 목적은?</label>
+                        <select id="repoPurpose" class="form-select" onchange="saveRepoData('${repo.id}')">
+                            <option value="">(선택 안 함)</option>
+                            <option value="reference" ${userData.purpose === 'reference' ? 'selected' : ''}>📚 참고용 (Reference)</option>
+                            <option value="to-try" ${userData.purpose === 'to-try' ? 'selected' : ''}>🧪 나중에 써볼 것 (To Try)</option>
+                            <option value="idea" ${userData.purpose === 'idea' ? 'selected' : ''}>💡 아이디어 얻기 (Idea)</option>
+                            <option value="alternative" ${userData.purpose === 'alternative' ? 'selected' : ''}>🔄 대체재 조사 (Alternative)</option>
+                            <option value="using" ${userData.purpose === 'using' ? 'selected' : ''}>🛠 실제 사용 중 (Using)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">한 줄 메모</label>
+                        <textarea id="repoNote" class="form-textarea" placeholder="이 레포의 핵심이 뭐였더라..." onblur="saveRepoData('${repo.id}')">${userData.note || ''}</textarea>
+                    </div>
+                    
+                    <!-- AI Section -->
+                    <div class="ai-section">
+                        <div class="ai-header" id="aiHeader-${repo.id}">
+                            <div class="ai-title">✨ AI 인사이트</div>
+                            ${userData.aiSummary ? `
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <span style="font-size:0.75rem; color:#db2777; background:#fce7f3; padding:2px 6px; border-radius:4px;">
+                                        By ${userData.aiProvider === 'deepseek' ? 'DeepSeek 🐋' : 'Gemini ✨'}
+                                    </span>
+                                    <button class="ai-btn" onclick="generateAISummary('${repo.id}')" id="aiBtn-${repo.id}">다시 분석</button>
+                                </div>
+                            ` : `
+                                <button class="ai-btn" onclick="generateAISummary('${repo.id}')" id="aiBtn-${repo.id}">분석하기</button>
+                            `}
+                        </div>
+                        <div id="aiContent-${repo.id}" class="ai-content">
+                            ${userData.aiSummary ? renderMarkdown(userData.aiSummary) : '<span style="color:#888;">버튼을 누르면 AI가 이 레포지토리를 분석해드립니다.</span>'}
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" style="display:flex; justify-content:space-between;">
+                            <span>📚 컬렉션에 추가</span>
+                            <button onclick="createNewCollectionInModal('${repo.id}')" style="background:none; border:none; color:#764ba2; cursor:pointer; font-size:0.8rem; font-weight:bold;">+ 새 컬렉션</button>
+                        </label>
+                        <div id="modalCollectionsList">
+                            ${collectionsHtml}
+                        </div>
+                    </div>
+
+                    <!-- Explicit Save Button -->
+                    <div style="margin-top: 20px; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
+                        <span id="saveStatus" style="font-size: 0.8rem; color: #10b981; opacity: 0; transition: opacity 0.5s;">✅ 저장되었습니다</span>
+                        <button onclick="manualSave('${repo.id}')" class="save-btn" style="float:none;">
+                            💾 저장하기
+                        </button>
+                    </div>
+
+                </div>
+            `;
+        }
+
+        // Manual Save Wrapper
+        window.manualSave = function (repoId) {
+            saveRepoData(repoId);
+            const status = document.getElementById('saveStatus');
+            status.style.opacity = '1';
+            setTimeout(() => status.style.opacity = '0', 2000);
+        };
+
+        // Get use cases based on category
+        function getUseCases(category, repo) {
+            const cases = {
+                'AI/ML': [
+                    '머신러닝 모델 학습 및 추론에 활용',
+                    '데이터 전처리 파이프라인 구축',
+                    'AI 서비스 프로토타입 개발',
+                    '기존 프로젝트에 AI 기능 통합'
+                ],
+                'Frontend': [
+                    '웹 애플리케이션 UI 컴포넌트로 활용',
+                    '반응형 디자인 구현에 참고',
+                    '사용자 경험(UX) 개선',
+                    '디자인 시스템 구축에 활용'
+                ],
+                'Backend': [
+                    'API 서버 구축에 활용',
+                    '마이크로서비스 아키텍처 구현',
+                    '데이터베이스 연동 로직 참고',
+                    '인증/인가 시스템 구현'
+                ],
+                'DevOps': [
+                    'CI/CD 파이프라인 자동화',
+                    '인프라 코드화(IaC) 구현',
+                    '컨테이너 오케스트레이션',
+                    '모니터링 및 로깅 시스템 구축'
+                ],
+                'Database': [
+                    '데이터 모델링 참고',
+                    '쿼리 최적화 기법 학습',
+                    '데이터 마이그레이션 도구로 활용',
+                    'ORM 패턴 학습'
+                ],
+                'Mobile': [
+                    '크로스 플랫폼 앱 개발',
+                    '네이티브 UI 컴포넌트 구현',
+                    '모바일 최적화 기법 학습',
+                    '푸시 알림 시스템 구축'
+                ],
+                'Tools': [
+                    '개발 워크플로우 자동화',
+                    '생산성 향상 도구로 활용',
+                    '커스텀 CLI 도구 개발 참고',
+                    '개발 환경 설정 최적화'
+                ],
+                'Security': [
+                    '보안 취약점 분석 및 대응',
+                    '인증 시스템 강화',
+                    '데이터 암호화 구현',
+                    '보안 모범 사례 학습'
+                ],
+                'Data': [
+                    '데이터 분석 파이프라인 구축',
+                    '시각화 대시보드 개발',
+                    '데이터 처리 자동화',
+                    '리포트 생성 시스템 구축'
+                ],
+                'Others': [
+                    'README를 참고하여 프로젝트 이해',
+                    '코드 구조와 패턴 학습',
+                    '이슈와 PR을 통한 기여 참여',
+                    '비슷한 프로젝트 개발 시 참고'
+                ]
+            };
+
+            return cases[category] || cases['Others'];
+        }
+
+        // Format number
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        // Calculate Repo Health
+        function calculateRepoHealth(repo) {
+            if (repo.archived) return { status: 'archived', label: '📦 보관됨', color: 'archived' };
+
+            const lastUpdate = new Date(repo.updated_at);
+            const now = new Date();
+            const diffDays = (now - lastUpdate) / (1000 * 60 * 60 * 24);
+
+            if (diffDays < 90) return { status: 'active', label: '🟢 활성', color: 'active' }; // 3 months
+            if (diffDays < 365) return { status: 'stable', label: '🔵 안정', color: 'stable' }; // 1 year
+            return { status: 'stale', label: '⚠️ 정체', color: 'stale' };
+        }
+
+        // Render repo card
+        function renderRepoCard(repo) {
+            const langColor = languageColors[repo.language] || '#888';
+            const health = calculateRepoHealth(repo);
+
+            return `
+                <div class="repo-card" onclick="showDetail('${repo.id}')">
+                    <div class="repo-header">
+                        <div class="repo-name">
+                            ${repo.name}
+                            ${getPurposeBadge(repo.userData?.purpose)}
+                        </div>
+                        <span class="repo-stars">⭐ ${formatNumber(repo.stargazers_count)}</span>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <span class="health-badge ${health.color}">
+                            <span class="health-dot"></span> ${health.label}
+                        </span>
+                    </div>
+                    <p class="repo-desc">${repo.description || '설명 없음'}</p>
+                    <div class="repo-footer">
+                        ${repo.language ? `
+                            <span class="language-badge">
+                                <span class="language-dot" style="background: ${langColor}"></span>
+                                ${repo.language}
+                            </span>
+                        ` : '<span></span>'}
+                        <span class="repo-owner">${repo.owner.login}</span>
+                    </div>
+                    <div class="repo-category">
+                        <span class="category-tag">${repo._category}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getPurposeBadge(purpose) {
+            if (!purpose) return '';
+            const labels = {
+                'reference': '📚',
+                'to-try': '🧪',
+                'idea': '💡',
+                'alternative': '🔄',
+                'using': '🛠'
+            };
+            return labels[purpose] ? `<span class="purpose-tag">${labels[purpose]}</span>` : '';
+        }
+
+        // Save Repo Data
+        window.saveRepoData = function (repoId) {
+            const purpose = document.getElementById('repoPurpose').value;
+            const note = document.getElementById('repoNote').value;
+            const statusEl = document.getElementById('saveStatus');
+
+            StorageManager.updateRepoData(repoId, { purpose, note });
+
+            // Update local state
+            const repo = allRepos.find(r => r.id == repoId);
+            if (repo) {
+                repo.userData = { purpose, note };
+            }
+
+            statusEl.textContent = '저장됨 ✓';
+            setTimeout(() => { statusEl.textContent = ''; }, 2000);
+
+            // Re-render grid to update badges if needed (optional optimization: only update specific card)
+            debounce(handleSort, 500)();
+        };
+
+        // Show detail modal
+        window.showDetail = function (repoId) {
+            const repo = allRepos.find(r => r.id == repoId);
+            if (!repo) return;
+
+            document.getElementById('modalTitle').textContent = repo.name;
+            document.getElementById('modalOwner').textContent = `@${repo.owner.login} `;
+            document.getElementById('modalContent').innerHTML = generateGuide(repo) + renderUserDataSection(repo);
+            document.getElementById('modalGithubLink').href = repo.html_url;
+
+            const homepageBtn = document.getElementById('modalHomepage');
+            if (repo.homepage) {
+                homepageBtn.href = repo.homepage;
+                homepageBtn.classList.remove('hide');
+            } else {
+                homepageBtn.classList.add('hide');
+            }
+
+            detailModal.classList.add('show');
+        };
+
+        // Render repos
+        function renderRepos(repos, append = false) {
+            if (!append) {
+                reposGrid.innerHTML = '';
+            }
+
+            repos.forEach(repo => {
+                reposGrid.innerHTML += renderRepoCard(repo);
+            });
+        }
+
+        // Update stats
+        function updateStats(stats) {
+            document.getElementById('totalStars').textContent = stats.totalRepos;
+            document.getElementById('totalLanguages').textContent = stats.languages;
+            document.getElementById('totalTopics').textContent = stats.topics;
+            document.getElementById('avgStars').textContent = formatNumber(stats.avgStars);
+        }
+
+        // Update category chips
+        function updateCategoryChips(categories) {
+            const sorted = Object.entries(categories).sort((a, b) => b[1] - a[1]);
+
+            categoryChips.innerHTML = `
+                <button class="chip active" data-category="all" onclick="filterByCategory('all')">
+                    전체 (${allRepos.length})
+                </button>
+            `;
+
+            sorted.forEach(([cat, count]) => {
+                categoryChips.innerHTML += `
+                    <button class="chip" data-category="${cat}" onclick="filterByCategory('${cat}')">
+                        ${cat} (${count})
+                    </button>
+                `;
+            });
+        }
+
+        // Filter by category
+        window.filterByCategory = function (category) {
+            currentCategory = category;
+
+            // Update active state
+            document.querySelectorAll('.chip').forEach(chip => {
+                if (chip.dataset.category === category) {
+                    chip.classList.add('active');
+                } else {
+                    chip.classList.remove('active');
+                }
+            });
+
+            handleFilter();
+        };
+
+        function handlePurposeFilter() {
+            currentPurpose = purposeFilter.value;
+            handleFilter();
+        }
+
+        // --- Collection Helper Functions ---
+        // Toggle Collection
+        window.toggleCollection = function (repoId, colId, isChecked) {
+            const repoData = StorageManager.getRepoData(repoId);
+            let collectionIds = repoData.collectionIds || [];
+
+            if (isChecked) {
+                if (!collectionIds.includes(colId)) collectionIds.push(colId);
+            } else {
+                collectionIds = collectionIds.filter(id => id !== colId);
+            }
+
+            StorageManager.updateRepoData(repoId, { collectionIds });
+
+            // Update local state
+            const repo = allRepos.find(r => r.id == repoId);
+            if (repo) {
+                repo.userData = repo.userData || {};
+                repo.userData.collectionIds = collectionIds;
+            }
+
+            // Check if we need to refresh (filtering)
+            if (currentCollection !== 'all') {
+                handleFilter();
+            }
+        };
+
+        // Create New Collection in Modal
+        window.createNewCollectionInModal = function (repoId) {
+            const name = prompt("새 컬렉션 이름:");
+            if (!name) return;
+
+            StorageManager.createCollection(name);
+            updateCollectionsBar(); // Refresh UI bar
+
+            // Re-open detail to refresh list
+            showDetail(repoId);
+        };
+
+        // Update Collections Bar
+        function updateCollectionsBar() {
+            const allCollections = StorageManager.getCollections();
+            const bar = document.getElementById('collectionsBar');
+            bar.style.display = 'flex';
+
+            bar.innerHTML = `
+                <button class="collection-btn ${currentCollection === 'all' ? 'active' : ''}" onclick="filterByCollection('all')">
+                    🗂 전체
+                </button>
+            `;
+
+            allCollections.forEach(col => {
+                bar.innerHTML += `
+                    <button class="collection-btn ${currentCollection === col.id ? 'active' : ''}" onclick="filterByCollection('${col.id}')">
+                        📁 ${col.name}
+                    </button>
+                `;
+            });
+
+            bar.innerHTML += `
+                <button class="collection-btn add-coll" onclick="createNewCollectionFromBar()">
+                    + 만들기
+                </button>
+            `;
+        }
+
+
+
+        // --- View Switching ---
+        window.switchView = function (view) {
+            currentView = view;
+            document.getElementById('viewGridBtn').classList.toggle('active', view === 'grid');
+            document.getElementById('viewGraphBtn').classList.toggle('active', view === 'graph');
+
+            if (view === 'grid') {
+                document.getElementById('reposGrid').classList.add('show');
+                document.getElementById('loadMoreSection').classList.add('show');
+                document.getElementById('graphContainer').classList.remove('show');
+            } else {
+                document.getElementById('reposGrid').classList.remove('show');
+                document.getElementById('loadMoreSection').classList.remove('show');
+                document.getElementById('graphContainer').classList.add('show');
+                renderGraph();
+            }
+        };
+
+        // Render Graph
+        function renderGraph() {
+            const container = document.getElementById('graphContainer');
+            const nodes = [];
+            const edges = [];
+
+            // 1. Create Nodes
+            filteredRepos.forEach(repo => {
+                const health = calculateRepoHealth(repo);
+                let color = '#a5b4fc'; // Default
+                if (health.status === 'stale') color = '#fca5a5';
+                if (health.status === 'active') color = '#86efac';
+
+                nodes.push({
+                    id: repo.id,
+                    label: repo.name,
+                    title: repo.description,
+                    shape: 'dot',
+                    size: 15 + Math.log(repo.stargazers_count + 1) * 2,
+                    color: color
+                });
+            });
+
+            // 2. Create Edges (Simple Logic: Same Owner or Shared Topic)
+            // Limit edges to prevent mess
+            const repoCount = filteredRepos.length;
+            if (repoCount < 300) { // Only do heavy edge calculation if count is reasonable
+                for (let i = 0; i < repoCount; i++) {
+                    for (let j = i + 1; j < repoCount; j++) {
+                        const r1 = filteredRepos[i];
+                        const r2 = filteredRepos[j];
+
+                        // Same Owner
+                        if (r1.owner.login === r2.owner.login) {
+                            edges.push({ from: r1.id, to: r2.id, color: { color: '#e2e8f0', opacity: 0.5 } });
+                            continue;
+                        }
+
+                        // Shared Topics (at least 2)
+                        const topics1 = r1.topics || [];
+                        const topics2 = r2.topics || [];
+                        const intersection = topics1.filter(t => topics2.includes(t));
+
+                        if (intersection.length >= 2) {
+                            edges.push({ from: r1.id, to: r2.id, color: { color: '#cbd5e1', opacity: 0.3 } });
+                        }
+                    }
+                }
+            }
+
+            const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+            const options = {
+                nodes: {
+                    font: { size: 14, color: '#333' },
+                    borderWidth: 2
+                },
+                physics: {
+                    stabilization: false,
+                    barnesHut: { gravitationalConstant: -2000, springConstant: 0.04 }
+                }
+            };
+
+            new vis.Network(container, data, options);
+
+            // Handle click
+            // network.on("click", function (params) {
+            //    if (params.nodes.length > 0) showDetail(params.nodes[0]);
+            // });
+        }
+
+        // Filter by Collection
+        window.filterByCollection = function (id) {
+            currentCollection = id;
+            updateCollectionsBar();
+            handleFilter();
+        };
+
+        window.createNewCollectionFromBar = function () {
+            const name = prompt("새 컬렉션 이름:");
+            if (name) {
+                StorageManager.createCollection(name);
+                updateCollectionsBar();
+            }
+        };
+
+        // Handle filter
+        function handleFilter() {
+            const query = filterInput.value.toLowerCase();
+
+            filteredRepos = allRepos.filter(repo => {
+                const matchesSearch = !query ||
+                    repo.name.toLowerCase().includes(query) ||
+                    (repo.description || '').toLowerCase().includes(query) ||
+                    (repo.topics || []).some(t => t.toLowerCase().includes(query)) ||
+                    (repo.userData?.note || '').toLowerCase().includes(query);
+
+                const matchesCategory = currentCategory === 'all' || repo._category === currentCategory;
+
+                let matchesPurpose = true;
+                if (currentPurpose !== 'all') {
+                    if (currentPurpose === 'memo') {
+                        matchesPurpose = !!repo.userData?.note;
+                    } else {
+                        matchesPurpose = repo.userData?.purpose === currentPurpose;
+                    }
+                }
+
+                let matchesCollection = true;
+                if (currentCollection !== 'all') {
+                    const colIds = repo.userData?.collectionIds || [];
+                    matchesCollection = colIds.includes(currentCollection);
+                }
+
+                return matchesSearch && matchesCategory && matchesPurpose && matchesCollection;
+            });
+
+            currentPage = 1;
+            handleSort();
+        }
+
+
+
+        // Handle sort
+        function handleSort() {
+            const sortBy = sortSelect.value;
+
+            filteredRepos.sort((a, b) => {
+                switch (sortBy) {
+                    case 'stars':
+                        return b.stargazers_count - a.stargazers_count;
+                    case 'updated':
+                        return new Date(b.updated_at) - new Date(a.updated_at);
+                    case 'name':
+                        return a.name.localeCompare(b.name);
+                    default:
+                        return 0;
+                }
+            });
+
+            const displayRepos = filteredRepos.slice(0, displayPerPage);
+            renderRepos(displayRepos);
+
+            // Show/hide load more button
+            if (filteredRepos.length > displayPerPage) {
+                loadMoreSection.classList.add('show');
+            } else {
+                loadMoreSection.classList.remove('show');
+            }
+        }
+
+        // Load more
+        function loadMore() {
+            currentPage++;
+            const start = (currentPage - 1) * displayPerPage;
+            const end = start + displayPerPage;
+            const moreRepos = filteredRepos.slice(start, end);
+
+            renderRepos(moreRepos, true);
+
+            if (end >= filteredRepos.length) {
+                loadMoreSection.classList.remove('show');
+            }
+        }
+
+        // Extract username from input
+        function extractUsername(input) {
+            input = input.trim();
+            const urlMatch = input.match(/github\.com\/([^\/\?]+)/i);
+            if (urlMatch) {
+                return urlMatch[1];
+            }
+            return input;
+        }
+
+        // Handle search
+        async function handleSearch() {
+            const rawInput = usernameInput.value.trim();
+
+            if (!rawInput) {
+                showError('사용자명을 입력해주세요');
+                return;
+            }
+
+            const username = extractUsername(rawInput);
+            usernameInput.value = username;
+
+            // Save history
+            StorageManager.saveSearchHistory(username);
+            updateHistoryList();
+
+            // Reset state
+            allRepos = [];
+            filteredRepos = [];
+            currentPage = 1;
+            currentCategory = 'all';
+            filterInput.value = '';
+            sortSelect.value = 'starred_at';
+
+            // Show loading
+            hideError();
+            emptyState.classList.add('hide');
+            reposGrid.classList.remove('show');
+            statsSection.classList.remove('show');
+            filterSection.classList.remove('show');
+            loadMoreSection.classList.remove('show');
+            loadingState.classList.add('show');
+
+            try {
+                // Fetch stars
+                const fetchedRepos = await fetchAllStars(username);
+
+                // Merge with local data
+                allRepos = fetchedRepos.map(repo => {
+                    const localData = StorageManager.getRepoData(repo.id);
+                    return { ...repo, userData: localData };
+                });
+
+                if (allRepos.length === 0) {
+                    loadingState.classList.remove('show');
+                    emptyState.classList.remove('hide');
+                    emptyState.innerHTML = `
+                        <div class="empty-icon">⭐</div>
+                        <h2>Stars가 없습니다</h2>
+                        <p>${username}님은 아직 Stars한 레포지토리가 없습니다</p>
+                    `;
+                    return;
+                }
+
+                // Analyze
+                const stats = analyzeRepos(allRepos);
+                filteredRepos = [...allRepos];
+
+                // Update UI
+                loadingState.classList.remove('show');
+                statsSection.classList.add('show');
+                filterSection.classList.add('show');
+                reposGrid.classList.add('show');
+
+                updateStats(stats);
+                updateCategoryChips(stats.categories);
+                updateCollectionsBar(); // Initialize bar
+
+                // Initial render
+                const displayRepos = filteredRepos.slice(0, displayPerPage);
+                renderRepos(displayRepos);
+
+                if (filteredRepos.length > displayPerPage) {
+                    loadMoreSection.classList.add('show');
+                }
+
+            } catch (error) {
+                loadingState.classList.remove('show');
+                emptyState.classList.remove('hide');
+                showError(error.message);
+            }
+        }
+
+        // Show/hide error
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.classList.add('show');
+        }
+
+        function hideError() {
+            errorMsg.classList.remove('show');
+        }
+
+        // --- AI Analysis Functions ---
+
+        // Render Markdown (Enhanced)
+        function renderMarkdown(text) {
+            if (!text) return '';
+
+            // 1. Code Blocks
+            let html = text.replace(/```(\w+)?\n([\s\S]*?)```/g, function (match, lang, code) {
+                return `<div class="code-block">
+                            <div class="code-header">${lang || 'Code'} <button onclick="copyCode(this)" class="copy-btn">Copy</button></div>
+                            <pre><code>${code.trim()}</code></pre>
+                        </div>`;
+            });
+
+            // 2. Headings & Formatting
+            html = html
+                .replace(/^### (.*$)/gim, '<h3 class="md-h3">$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2 class="md-h2">$1</h2>')
+                .replace(/^# (.*$)/gim, '<h1 class="md-h1">$1</h1>')
+                .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+                .replace(/\*(.*)\*/gim, '<em>$1</em>')
+                .replace(/^- (.*$)/gim, '<li>$1</li>')
+                .replace(/\n\n/gim, '<br>');
+
+            // Wrap lists
+            if (html.includes('<li>')) {
+                html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+            }
+
+            return `<div class="markdown-prose">${html}</div>`;
+        }
+
+        // Copy Code Utility
+        window.copyCode = function (btn) {
+            const code = btn.parentElement.nextElementSibling.innerText;
+            navigator.clipboard.writeText(code);
+            btn.textContent = 'Copied!';
+            setTimeout(() => btn.textContent = 'Copy', 2000);
+        };
+
+        window.generateAISummary = async function (repoId) {
+            const btn = document.getElementById(`aiBtn-${repoId}`);
+            const contentDiv = document.getElementById(`aiContent-${repoId}`);
+            const repo = allRepos.find(r => r.id == repoId);
+
+            if (!repo) return;
+
+            // 1. Check API Key & Provider
+            const provider = StorageManager.getProvider(); // 'gemini' or 'deepseek'
+            let apiKey;
+
+            if (provider === 'deepseek') {
+                apiKey = StorageManager.getDeepSeekKey();
+            } else {
+                apiKey = StorageManager.getApiKey();
+            }
+
+            if (!apiKey) {
+                alert(`${provider === 'deepseek' ? 'DeepSeek' : 'Google Gemini'} API Key가 필요합니다. 설정에서 입력해주세요.`);
+                openSettings();
+                return;
+            }
+
+            // 2. UI - Loading State
+            const originalBtnText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span class="spinner-sm"></span> 분석 중...`;
+
+            contentDiv.innerHTML = `
+                <div class="ai-loading">
+                    <div class="spinner" style="margin: 0 auto 10px auto;"></div>
+                    <p id="aiStatusText" style="font-size:0.9rem;">AI가 레포지토리를 분석하고 있습니다...</p>
+                </div>
+            `;
+
+            try {
+                // 3. Prepare Prompt (Refined)
+                const prompt = `
+                다음 GitHub 레포지토리에 대해, 개발자가 바로 사용할 수 있도록 핵심 위주로 한국어 가이드를 작성해주세요.
+                
+                Repository: ${repo.name}
+                Description: ${repo.description || 'N/A'}
+                Language: ${repo.language || 'N/A'}
+                Topics: ${(repo.topics || []).join(', ')}
+                
+                [필수 출력 형식]
+                ## 🚀 핵심 가치 (Who & Why)
+                - 이 라이브러리가 왜 중요한지, 누구에게 필요한지 한 줄로 명확히 요약
+                
+                ## 🛠 3단계 빠른 시작 (Quick Start)
+                **STEP 1. 5분 체험 (Trial)**
+                (가장 빠르게 실행해볼 수 있는 one-liner 또는 설치 커맨드)
+                
+                **STEP 2. 실전 설정 (Full Setup)**
+                (프로젝트에 통합하거나 전체 설치를 위한 커맨드/설정)
+                
+                ## 📄 예상 결과물 (Output)
+                - 이 도구를 사용하면 무엇을 얻을 수 있는지 설명 (스크린샷 대용의 텍스트 묘사)
+                
+                ## 💡 추천 활용 시나리오
+                - 언제 이 라이브러리를 사용하면 가장 효과적인지 불렛포인트 3개
+                `;
+
+                // 4. Update Status Text
+                const statusTimer1 = setTimeout(() => {
+                    const status = document.getElementById('aiStatusText');
+                    if (status) status.textContent = "라이브러리 컨텍스트 이해 중...";
+                }, 1500);
+
+                const statusTimer2 = setTimeout(() => {
+                    const status = document.getElementById('aiStatusText');
+                    if (status) status.textContent = "실행 가능한 예제 생성 중...";
+                }, 3500);
+
+                // 5. Call API
+                let result = "";
+                if (provider === 'deepseek') {
+                    result = await callDeepSeekAPI(apiKey, prompt);
+                } else {
+                    result = await callGeminiAPI(apiKey, prompt);
+                }
+
+                clearTimeout(statusTimer1);
+                clearTimeout(statusTimer2);
+
+                // 6. Save & Render
+                repo.userData = repo.userData || {};
+                repo.userData.aiSummary = result;
+                repo.userData.aiProvider = provider; // Save Provider
+                StorageManager.updateRepoData(repoId, { aiSummary: result, aiProvider: provider });
+
+                contentDiv.innerHTML = renderMarkdown(result) + `
+                    <div style="margin-top:15px; padding-top:10px; border-top:1px dashed #e5e7eb; display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:#6b7280;">
+                        <span>⚠️ AI 분석 결과는 추정치이며 정확하지 않을 수 있습니다.</span>
+                        <span style="background:#f3f4f6; padding:2px 8px; border-radius:12px;">
+                            Generated by ${provider === 'deepseek' ? 'DeepSeek 🐋' : 'Gemini ✨'}
+                        </span>
+                    </div>
+                `;
+
+                // Refresh badge (Reset to just title)
+                document.getElementById(`aiHeader-${repoId}`).innerHTML = `
+                    <div class="ai-title">✨ AI 인사이트</div>
+                    <button class="ai-btn" onclick="generateAISummary('${repo.id}')" id="aiBtn-${repo.id}">🔄 다시 분석</button>
+                `;
+
+            } catch (error) {
+                console.error(error);
+                let errorMsg = "분석에 실패했습니다.";
+                if (error.message.includes("401")) errorMsg = "API Key가 올바르지 않습니다.";
+                if (error.message.includes("429")) errorMsg = "API 요청 한도를 초과했습니다.";
+
+                contentDiv.innerHTML = `<div class="error-msg" style="display:block;">${errorMsg}<br><small>${error.message}</small></div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnText;
+            }
+        };
+
+        async function callGeminiAPI(key, prompt) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(`Gemini Error (${response.status}): ${err.error?.message || response.statusText}`);
+            }
+            const data = await response.json();
+            if (!data.candidates || !data.candidates[0].content) {
+                throw new Error("AI 응답을 생성하지 못했습니다. (Safety blocked potentially)");
+            }
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        async function callDeepSeekAPI(key, prompt) {
+            const url = 'https://api.deepseek.com/chat/completions';
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${key}`
+                },
+                body: JSON.stringify({
+                    model: "deepseek-chat",
+                    messages: [
+                        { "role": "system", "content": "You are a helpful technical assistant." },
+                        { "role": "user", "content": prompt }
+                    ],
+                    stream: false
+                })
+            });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(`DeepSeek Error (${response.status}): ${errorData.error?.message || response.statusText}`);
+            }
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
+    </script>
+</body>
+
+</html>

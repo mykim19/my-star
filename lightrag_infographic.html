@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LightRAG: 차세대 검색 증강 생성</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #f8f9fa;
+            --text-main: #1a1a1a;
+            --text-sub: #4b5563;
+            /* Colors matching the original image palette accurately */
+            --blue-bg: #eff6ff;
+            --blue-border: #bfdbfe;
+            --blue-title: #1e3a8a;
+
+            --orange-bg: #fff7ed;
+            --orange-border: #fed7aa;
+            --orange-title: #9a3412;
+
+            --pink-bg: #fff1f2;
+            --pink-border: #fecaca;
+            --pink-title: #be123c;
+
+            --green-bg: #f0fdf4;
+            --green-border: #bbf7d0;
+            --green-title: #15803d;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f0f2f5;
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            /* Prevent scrolling */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1vh;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            max-width: 1920px;
+            background-color: #ffffff;
+            padding: 2vh 2vw;
+            border-radius: 1vw;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header - Compact */
+        header {
+            margin-bottom: 2vh;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 1vh;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            /* Reduced from 3.2rem */
+            font-weight: 900;
+            margin-bottom: 0.5vh;
+            letter-spacing: -0.02em;
+            color: #111;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #374151;
+            font-weight: 600;
+            margin-bottom: 0.5vh;
+            line-height: 1.3;
+        }
+
+        .intro {
+            font-size: 0.9rem;
+            color: #6b7280;
+            max-width: 90%;
+            line-height: 1.4;
+        }
+
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 20vw 1fr;
+            /* Fixed relative width for left panel */
+            gap: 2vw;
+            flex-grow: 1;
+            overflow: hidden;
+            /* Contain inner overflow if any */
+        }
+
+        /* Left Column */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            /* Center content vertically */
+            gap: 2vh;
+            padding: 1vh 0;
+        }
+
+        .stack-diagram {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1vh;
+            position: relative;
+            margin-bottom: 1vh;
+        }
+
+        .stack-layer {
+            width: 14vw;
+            height: 6vh;
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border: 2px solid #60a5fa;
+            border-radius: 0.8vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.9rem;
+            color: #1e40af;
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.15);
+            transform: perspective(800px) rotateX(25deg);
+            z-index: 2;
+            transition: transform 0.3s ease;
+        }
+
+        .stack-layer:hover {
+            transform: perspective(800px) rotateX(0deg) scale(1.05);
+            z-index: 10;
+        }
+
+        .stack-layer:nth-child(2) {
+            z-index: 3;
+            margin-top: -2.5vh;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-color: #3b82f6;
+        }
+
+        .stack-layer:nth-child(3) {
+            z-index: 1;
+            margin-top: -2.5vh;
+            background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);
+            color: white;
+            border: none;
+        }
+
+        /* Side Notes */
+        .side-note-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            background: #fff1f2;
+            padding: 1.5vh 1vw;
+            border-radius: 0.8vw;
+            border: 1px solid #fecaca;
+        }
+
+        .side-note-icon {
+            width: 3.5vh;
+            height: 3.5vh;
+            background: #ffe4e6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e11d48;
+            margin-bottom: 0.5vh;
+        }
+
+        .side-note-content h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.3vh;
+            color: #9f1239;
+            font-weight: 700;
+        }
+
+        .side-note-content p {
+            font-size: 0.75rem;
+            color: #881337;
+            line-height: 1.3;
+        }
+
+        /* Right Column Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.8fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 1.5vh;
+            height: 100%;
+        }
+
+        .info-box {
+            padding: 2vh;
+            border-radius: 1vw;
+            display: flex;
+            flex-direction: column;
+            gap: 1vh;
+            height: 100%;
+            justify-content: flex-start;
+        }
+
+        .info-box h3 {
+            font-size: 1.3rem;
+            /* Scaled down */
+            margin-bottom: 0.5vh;
+            display: flex;
+            align-items: center;
+            gap: 0.5vw;
+            font-weight: 800;
+        }
+
+        /* Feature Lists */
+        .feature-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1vh;
+            flex-grow: 1;
+            justify-content: space-evenly;
+        }
+
+        .horizontal-features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1vw;
+            height: 100%;
+            align-items: stretch;
+        }
+
+        .feature-item {
+            display: flex;
+            gap: 0.8vw;
+            align-items: center;
+        }
+
+        .horizontal-features .feature-item {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            background: white;
+            padding: 1.5vh 1vw;
+            border-radius: 0.8vw;
+            height: 100%;
+            justify-content: flex-start;
+            box-shadow: 0 0.5vh 1vh rgba(0, 0, 0, 0.02);
+        }
+
+        .icon-box {
+            width: 3vh;
+            height: 3vh;
+            border-radius: 0.5vw;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .horizontal-features .icon-box {
+            width: 5vh;
+            height: 5vh;
+            margin-bottom: 1vh;
+            border-radius: 0.8vw;
+            background: #fff;
+            box-shadow: 0 0.5vh 1vh rgba(0, 0, 0, 0.08);
+        }
+
+        .feature-text h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.3vh;
+            font-weight: 700;
+        }
+
+        .feature-text p {
+            font-size: 0.8rem;
+            line-height: 1.3;
+            color: #4b5563;
+        }
+
+        /* Why it matters */
+        .why-matters {
+            margin-top: 1.5vh;
+            background: #1f2937;
+            padding: 1.5vh 2vw;
+            border-radius: 0.8vw;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 2vw;
+            flex-shrink: 0;
+        }
+
+        .why-matters h3 {
+            font-size: 1.3rem;
+            white-space: nowrap;
+            color: #60a5fa;
+            font-weight: 800;
+        }
+
+        .why-matters p {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: #d1d5db;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 1vh;
+            padding-top: 1vh;
+            border-top: 1px solid #e5e7eb;
+            font-size: 0.75rem;
+            color: #6b7280;
+            flex-shrink: 0;
+        }
+
+        .glossary-grid {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.8vw;
+            /* Slightly reduced gap */
+        }
+
+        .glossary-item {
+            background: #f9fafb;
+            padding: 0.8vh 0.8vw;
+            border-radius: 0.4vw;
+            font-size: 0.7rem;
+            /* Slightly smaller to fit text */
+            flex: 1;
+            line-height: 1.35;
+            /* Removed truncation to show full text */
+            word-break: keep-all;
+            /* Keep words together for Korean */
+        }
+
+        .glossary-item strong {
+            color: #111;
+            margin-right: 0.3vw;
+        }
+
+        svg {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+
+        .icon-box svg {
+            width: 60%;
+            height: 60%;
+        }
+
+        /* Specific Box Styles (Restored) */
+        .box-blue {
+            background-color: var(--blue-bg);
+            border: 2px solid var(--blue-border);
+        }
+
+        .box-blue h3 {
+            color: var(--blue-title);
+        }
+
+        .box-orange {
+            background-color: var(--orange-bg);
+            border: 2px solid var(--orange-border);
+        }
+
+        .box-orange h3 {
+            color: var(--orange-title);
+        }
+
+        .box-pink {
+            background-color: var(--pink-bg);
+            border: 2px solid var(--pink-border);
+        }
+
+        .box-pink h3 {
+            color: var(--pink-title);
+        }
+
+        .box-green {
+            background-color: var(--green-bg);
+            border: 2px solid var(--green-border);
+        }
+
+        .box-green h3 {
+            color: var(--green-title);
+        }
+
+        .glossary-title {
+            display: none;
+            /* Hide title to save space for single screen */
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>LightRAG: 그래프 구조로 진화하는 차세대 검색 증강 생성</h1>
+            <div class="subtitle">
+                LightRAG는 그래프 기반 인덱싱과 이중 수준 검색 방식을 통해<br>
+                기존 RAG의 한계를 극복하고, 검색 효율성과 응답 품질을 향상시킵니다.
+            </div>
+            <p class="intro">
+                개발자들은 분절된 정보 검색 문제를 해결하기 위해, 이제 그래프 구조를 활용하여 복잡한 데이터의 상호의존성을 파악하는 새로운 RAG 시스템이 필요합니다.
+            </p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Left Panel: Visual Stack & Side Notes -->
+            <div class="left-panel">
+                <div class="stack-diagram">
+                    <div class="stack-layer" style="background: white; border: 2px solid #6366f1; color: #6366f1;">
+                        고수준 검색
+                    </div>
+                    <!-- Connector visual handled by margin overlap -->
+                    <div class="stack-layer" style="background: white; border: 2px solid #3b82f6; color: #3b82f6;">
+                        저수준 검색
+                    </div>
+                    <div class="stack-layer" style="background: #1e293b; border: none; color: white;">
+                        데이터 인덱싱
+                    </div>
+                    <!-- Simple SVG decoration for graph nodes -->
+                    <svg style="position:absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 120px; height: 40px; opacity: 0.5;"
+                        viewBox="0 0 100 40">
+                        <circle cx="20" cy="20" r="3" fill="white" />
+                        <circle cx="50" cy="10" r="3" fill="white" />
+                        <circle cx="80" cy="20" r="3" fill="white" />
+                        <line x1="20" y1="20" x2="50" y2="10" stroke="white" stroke-width="1" />
+                        <line x1="50" y1="10" x2="80" y2="20" stroke="white" stroke-width="1" />
+                    </svg>
+                </div>
+
+                <!-- Side Notes (Red) -->
+                <div class="side-note-item">
+                    <div class="side-note-icon">
+                        <!-- Pie Chart Icon -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+                            <path d="M22 12A10 10 0 0 0 12 2v10z" />
+                        </svg>
+                    </div>
+                    <div class="side-note-content">
+                        <h4>파편화된 정보 처리</h4> <!-- Replaced illogical "지수준 정확 누락" with logical text -->
+                        <p>단편적인 정보 처리는 문맥을 놓치기 쉬우며 전체적인 통찰을 얻기 어렵습니다.</p>
+                    </div>
+                </div>
+
+                <div class="side-note-item">
+                    <div class="side-note-icon">
+                        <!-- Bridge Icon -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 10h16" />
+                            <path d="M4 14h16" />
+                            <path d="M6 10v4" />
+                            <path d="M10 10v4" />
+                            <path d="M14 10v4" />
+                            <path d="M18 10v4" />
+                            <path d="M2 20l20 0" />
+                        </svg>
+                    </div>
+                    <div class="side-note-content">
+                        <h4>정보 통합의 어려움</h4>
+                        <p>분리된 정보 조각들을 통합하여 일관된 통찰을 만드는 데 어려움을 겪습니다.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: The 4 Grid Boxes -->
+            <div class="info-grid">
+
+                <!-- Box 1: Limitations -->
+                <div class="info-box box-blue">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7" />
+                            <rect x="14" y="3" width="7" height="7" />
+                            <rect x="14" y="14" width="7" height="7" />
+                            <path d="M10 14h-7v7h7z" />
+                        </svg>
+                        기존 RAG 시스템의 한계
+                    </h3>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <div class="icon-box">📄</div>
+                            <div class="feature-text">
+                                <h4>평면적 데이터 표현</h4>
+                                <p>개체 간의 복잡한 관계를 파악하기 어려워 정보의 깊이가 부족합니다.</p>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div class="icon-box">🚫</div>
+                            <div class="feature-text">
+                                <h4>맥락 인식 부재</h4>
+                                <p>여러 문서에 걸친 종합적 이해가 필요한 질문에 대해 적절한 답변을 생성하기 힘듭니다.</p>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div class="icon-box">🧩</div>
+                            <div class="feature-text">
+                                <h4>정보 통합의 어려움</h4>
+                                <p>분리된 정보 조각들을 통합하여 일관된 통찰을 도출하기 어렵습니다.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Box 2: Mechanism -->
+                <div class="info-box box-orange">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 16v-4" />
+                            <path d="M12 8h.01" />
+                        </svg>
+                        LightRAG의 핵심 작동 방식
+                    </h3>
+                    <div class="horizontal-features">
+                        <div class="feature-item">
+                            <div class="icon-box" style="color:#c2410c;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="18" cy="5" r="3" />
+                                    <circle cx="6" cy="12" r="3" />
+                                    <circle cx="18" cy="19" r="3" />
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                                </svg>
+                            </div>
+                            <div class="feature-text">
+                                <h4>그래프 기반<br>텍스트 인덱싱</h4>
+                                <p>텍스트에서 개체와 관계를 추출하여 지식 그래프로 구조화합니다.</p>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="icon-box" style="color:#c2410c;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                                </svg>
+                            </div>
+                            <div class="feature-text">
+                                <h4>이중 수준<br>검색 패러다임</h4>
+                                <p>구체적 정보(저수준)와 추상적 주제(고수준)를 모두 검색하여 효용성을 높입니다.</p>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="icon-box" style="color:#c2410c;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path
+                                        d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                    <path d="M12 4v16" />
+                                    <path d="M4 12h16" />
+                                </svg>
+                            </div>
+                            <div class="feature-text">
+                                <h4>그래프+벡터<br>통합 검색</h4>
+                                <p>그래프 구조와 벡터 검색을 결합하여 빠르고 정확한 정보 검색을 실현합니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Box 3: Inefficiencies -->
+                <div class="info-box box-pink">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                        전통적 방식의 비효율성
+                    </h3>
+                    <ul class="feature-list">
+                        <li class="feature-item">
+                            <div class="icon-box">⏳</div>
+                            <div class="feature-text">
+                                <h4>높은 업데이트 비용</h4>
+                                <p>새로운 데이터 추가 시 전체 인덱스를 재구축해야 해 시간과 비용이 많이 소요됩니다.</p>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div class="icon-box">🌍</div>
+                            <div class="feature-text">
+                                <h4>글로벌 맥락 누락</h4>
+                                <p>청크(chunk) 단위 검색은 전체적인 맥락과 관계 간의 숨겨진 연결성을 놓치기 쉽습니다.</p>
+                            </div>
+                        </li>
+                        <li class="feature-item">
+                            <div class="icon-box">⚠️</div>
+                            <div class="feature-text">
+                                <h4>대규모 데이터 처리 한계</h4>
+                                <p>데이터 양이 방대해질수록 검색 효율성이 급격히 저하됩니다.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Box 4: Advantages -->
+                <div class="info-box box-green">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                        </svg>
+                        LightRAG가 제공하는 전략적 이점
+                    </h3>
+                    <div class="horizontal-features">
+                        <div class="feature-item">
+                            <div class="icon-box" style="color:#15803d;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                                    <polyline points="17 6 23 6 23 12" />
+                                </svg>
+                            </div>
+                            <div class="feature-text">
+                                <h4>신속한<br>증분 업데이트</h4>
+                                <p>전체 재처리 없이 새로운 지식을 신속하고 효율적으로 통합하여 시스템을 최신 상태로 유지합니다.</p>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="icon-box" style="color:#15803d;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path
+                                        d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" />
+                                    <path
+                                        d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />
+                                </svg>
+                            </div>
+                            <div class="feature-text">
+                                <h4>포괄적인<br>정보 이해</h4>
+                                <p>다중 홉(multi-hop) 관계 탐색이 가능하여 복잡한 질의에 대한 깊이 있는 답변을 제공합니다.</p>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <div class="icon-box" style="color:#15803d;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="1" x2="12" y2="23" />
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                </svg>
+                            </div>
+                            <div class="feature-text">
+                                <h4>비용<br>효율성</h4>
+                                <p>기존 그래프 RAG 대비 API 호출과 토큰 사용량을 크게 줄여 비용을 획기적으로 절감합니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="why-matters">
+            <h3>Why it matters</h3>
+            <p>LightRAG의 등장은 단순한 키워드나 청크 검색을 넘어 데이터의 '관계'를 이해하는 RAG 시대로의 전환을 의미합니다. 이는 AI가 생성하는 답변의 깊이와 신뢰도를 한 차원 높여,
+                대규모의 동적 지식 베이스를 다루는 모든 응용 분야에 큰 영향을 미칩니다. 이제 기업과 개발자들은 비효율적인 기존 방식을 고수할 것인지, 아니면 LightRAG와 같은 그래프 기반
+                접근법을 채택하여 더 빠르고 스마트한 정보 서비스를 제공할 것인지 선택해야 합니다.</p>
+        </div>
+
+        <footer>
+            <span class="glossary-title">Glossary Strip</span>
+            <div class="glossary-grid">
+                <span class="glossary-item"><strong>검색 증강 생성(RAG):</strong> 대규모 언어 모델이 외부 지식 데이터베이스에서 관련 정보를 검색하여 답변의
+                    정확성과 최신성을 높이는 기술입니다.</span>
+                <span class="glossary-item"><strong>이중 수준 검색(Dual-level Retrieval):</strong> 사용자의 질의에 따라 구체적인 개별
+                    정보(저수준)와 전반적인 주제 및 요약(고수준)을 모두 탐색하는 검색 방식입니다.</span>
+                <span class="glossary-item"><strong>그래프 기반 인덱싱(Graph-based indexing):</strong> 텍스트 내의 개체(노드)와 그들 간의
+                    관계(엣지)를 추출하여 구조화된 지식 그래프 형태로 만드는 과정입니다.</span>
+                <span class="glossary-item"><strong>증분 업데이트(Incremental Update):</strong> 전체 데이터를 재처리하지 않고 새로 추가된 정보만 기존
+                    지식 그래프에 효율적으로 통합하는 기능입니다.</span>
+            </div>
+        </footer>
+    </div>
+
+</body>
+
+</html>

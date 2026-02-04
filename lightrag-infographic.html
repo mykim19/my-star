@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LightRAG: 그래프 구조로 진화하는 차세대 검색 증강 생성</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: #f0f0f0;
+        }
+
+        .container {
+            position: relative;
+            width: 1456px;
+            margin: 20px auto;
+        }
+
+        .container img {
+            width: 100%;
+            display: block;
+        }
+
+        .text-overlay {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        /* 메인 타이틀 */
+        .main-title {
+            top: 2.5%;
+            left: 1.5%;
+            width: 65%;
+            height: 5%;
+            background-color: #f5f5f0;
+            font-size: 28px;
+            font-weight: 900;
+            color: #1a1a1a;
+            justify-content: flex-start;
+            padding-left: 5px;
+        }
+
+        /* 서브 설명 */
+        .sub-description {
+            top: 8.5%;
+            left: 1.5%;
+            width: 30%;
+            height: 18%;
+            background-color: #f5f5f0;
+            font-size: 13px;
+            font-weight: 400;
+            color: #333;
+            text-align: left;
+            justify-content: flex-start;
+            align-items: flex-start;
+            padding: 5px 8px;
+            line-height: 1.55;
+        }
+
+        /* 좌측 파란 영역 - 고수준 검색 */
+        .high-level-search {
+            top: 30%;
+            left: 10%;
+            width: 6%;
+            height: 2.5%;
+            background-color: #d6e6f5;
+            font-size: 11px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        /* 좌측 파란 영역 - 저수준 검색 */
+        .low-level-search {
+            top: 44%;
+            left: 10%;
+            width: 6%;
+            height: 2.5%;
+            background-color: #d6e6f5;
+            font-size: 11px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        /* 좌측 파란 영역 - 데이터 인덱싱 */
+        .data-indexing {
+            top: 53%;
+            left: 11.5%;
+            width: 7%;
+            height: 2.5%;
+            background-color: #d6e6f5;
+            font-size: 11px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        /* 기존 RAG 시스템의 한계 - 제목 */
+        .rag-limit-title {
+            top: 9.5%;
+            left: 33%;
+            width: 14%;
+            height: 3.5%;
+            background-color: #fef3e8;
+            font-size: 15px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        /* 기존 RAG 시스템의 한계 - 평면적 데이터 표현 */
+        .rag-limit-1-title {
+            top: 15%;
+            left: 34%;
+            width: 9%;
+            height: 2%;
+            background-color: #fef3e8;
+            font-size: 11px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .rag-limit-1-desc {
+            top: 17%;
+            left: 34%;
+            width: 13%;
+            height: 4.5%;
+            background-color: #fef3e8;
+            font-size: 9.5px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.45;
+        }
+
+        /* 기존 RAG 시스템의 한계 - 맥락 인식 부재 */
+        .rag-limit-2-title {
+            top: 23%;
+            left: 34%;
+            width: 8%;
+            height: 2%;
+            background-color: #fef3e8;
+            font-size: 11px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .rag-limit-2-desc {
+            top: 25%;
+            left: 34%;
+            width: 13%;
+            height: 5%;
+            background-color: #fef3e8;
+            font-size: 9.5px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.45;
+        }
+
+        /* 기존 RAG 시스템의 한계 - 정보 통합의 어려움 */
+        .rag-limit-3-title {
+            top: 31.5%;
+            left: 34%;
+            width: 9%;
+            height: 2%;
+            background-color: #fef3e8;
+            font-size: 11px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .rag-limit-3-desc {
+            top: 33.5%;
+            left: 34%;
+            width: 13%;
+            height: 5.5%;
+            background-color: #fef3e8;
+            font-size: 9.5px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.45;
+        }
+
+        /* LightRAG의 핵심 작동 방식 - 제목 */
+        .lightrag-method-title {
+            top: 9.5%;
+            left: 62%;
+            width: 17%;
+            height: 3.5%;
+            background-color: #e8f5e8;
+            font-size: 15px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        /* 그래프 기반 텍스트 인덱싱 */
+        .method-1-title {
+            top: 17.5%;
+            left: 51.5%;
+            width: 11%;
+            height: 2%;
+            background-color: #e8f5e8;
+            font-size: 10px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .method-1-desc {
+            top: 19.5%;
+            left: 50.5%;
+            width: 12%;
+            height: 5%;
+            background-color: #e8f5e8;
+            font-size: 9px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.45;
+        }
+
+        /* 이중 수준 검색 패러다임 */
+        .method-2-title {
+            top: 17.5%;
+            left: 64%;
+            width: 11%;
+            height: 2%;
+            background-color: #e8f5e8;
+            font-size: 10px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .method-2-desc {
+            top: 19.5%;
+            left: 63%;
+            width: 13%;
+            height: 5%;
+            background-color: #e8f5e8;
+            font-size: 9px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.45;
+        }
+
+        /* 그래프-벡터 통합 검색 */
+        .method-3-title {
+            top: 17.5%;
+            left: 77.5%;
+            width: 11%;
+            height: 2%;
+            background-color: #e8f5e8;
+            font-size: 10px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .method-3-desc {
+            top: 19.5%;
+            left: 76.5%;
+            width: 12.5%;
+            height: 5%;
+            background-color: #e8f5e8;
+            font-size: 9px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.45;
+        }
+
+        /* 전통적 방식의 비효율성 - 제목 */
+        .inefficiency-title {
+            top: 42%;
+            left: 22%;
+            width: 14%;
+            height: 3.5%;
+            background-color: #fce8e8;
+            font-size: 15px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        /* 높은 업데이트 비용 */
+        .inefficiency-1-title {
+            top: 61%;
+            left: 13%;
+            width: 9%;
+            height: 2%;
+            background-color: #fce8e8;
+            font-size: 10px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .inefficiency-1-desc {
+            top: 63%;
+            left: 11.5%;
+            width: 12%;
+            height: 5%;
+            background-color: #fce8e8;
+            font-size: 9px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.45;
+        }
+
+        /* 글로벌 맥락 누락 */
+        .inefficiency-2-title {
+            top: 61%;
+            left: 25.5%;
+            width: 8.5%;
+            height: 2%;
+            background-color: #fce8e8;
+            font-size: 10px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .inefficiency-2-desc {
+            top: 63%;
+            left: 24%;
+            width: 12%;
+            height: 5%;
+            background-color: #fce8e8;
+            font-size: 9px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.45;
+        }
+
+        /* 하단 빨간 영역 - 저수준 정보 누락 */
+        .red-bottom-1-title {
+            top: 75%;
+            left: 1.5%;
+            width: 9%;
+            height: 2%;
+            background-color: #fce8e8;
+            font-size: 10px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .red-bottom-1-desc {
+            top: 77%;
+            left: 0.5%;
+            width: 12%;
+            height: 5%;
+            background-color: #fce8e8;
+            font-size: 9px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.45;
+        }
+
+        /* 정보 통합의 어려움 */
+        .red-bottom-2-title {
+            top: 75%;
+            left: 12%;
+            width: 9%;
+            height: 2%;
+            background-color: #fce8e8;
+            font-size: 10px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .red-bottom-2-desc {
+            top: 77%;
+            left: 10.5%;
+            width: 12%;
+            height: 5%;
+            background-color: #fce8e8;
+            font-size: 9px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.45;
+        }
+
+        /* 대규모 데이터 처리 한계 */
+        .red-bottom-3-title {
+            top: 75%;
+            left: 22%;
+            width: 11%;
+            height: 2%;
+            background-color: #fce8e8;
+            font-size: 10px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .red-bottom-3-desc {
+            top: 77%;
+            left: 21%;
+            width: 12%;
+            height: 5%;
+            background-color: #fce8e8;
+            font-size: 9px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.45;
+        }
+
+        /* LightRAG가 제공하는 전략적 이점 - 제목 */
+        .advantage-title {
+            top: 42%;
+            left: 59%;
+            width: 19%;
+            height: 3.5%;
+            background-color: #fffde8;
+            font-size: 15px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        /* 신속한 증분 업데이트 */
+        .advantage-1-title {
+            top: 61%;
+            left: 40%;
+            width: 10%;
+            height: 2%;
+            background-color: #fffde8;
+            font-size: 10px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .advantage-1-desc {
+            top: 63%;
+            left: 38%;
+            width: 13%;
+            height: 5%;
+            background-color: #fffde8;
+            font-size: 9px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.45;
+        }
+
+        /* 포괄적인 정보 이해 */
+        .advantage-2-title {
+            top: 61%;
+            left: 53%;
+            width: 10%;
+            height: 2%;
+            background-color: #fffde8;
+            font-size: 10px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .advantage-2-desc {
+            top: 63%;
+            left: 51%;
+            width: 13%;
+            height: 5%;
+            background-color: #fffde8;
+            font-size: 9px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.45;
+        }
+
+        /* 비용 효율성 */
+        .advantage-3-title {
+            top: 61%;
+            left: 66%;
+            width: 7%;
+            height: 2%;
+            background-color: #fffde8;
+            font-size: 10px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .advantage-3-desc {
+            top: 63%;
+            left: 64%;
+            width: 12.5%;
+            height: 6%;
+            background-color: #fffde8;
+            font-size: 9px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.45;
+        }
+
+        /* Why it matters */
+        .why-title {
+            top: 72%;
+            left: 36.5%;
+            width: 10%;
+            height: 2.5%;
+            background-color: #fffde8;
+            font-size: 13px;
+            font-weight: 700;
+            color: #333;
+            justify-content: flex-start;
+        }
+
+        .why-desc {
+            top: 75%;
+            left: 36.5%;
+            width: 40%;
+            height: 8.5%;
+            background-color: #fffde8;
+            font-size: 9.5px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.55;
+            text-align: left;
+            align-items: flex-start;
+            padding: 2px;
+        }
+
+        /* Glossary Strip */
+        .glossary-title {
+            top: 86%;
+            left: 1%;
+            width: 8%;
+            height: 2.5%;
+            background-color: #e8e8e8;
+            font-size: 12px;
+            font-weight: 700;
+            color: #333;
+            justify-content: flex-start;
+        }
+
+        .glossary-content {
+            top: 89%;
+            left: 1%;
+            width: 76%;
+            height: 9%;
+            background-color: #e8e8e8;
+            font-size: 8.5px;
+            font-weight: 400;
+            color: #555;
+            line-height: 1.65;
+            text-align: left;
+            align-items: flex-start;
+            padding: 2px;
+        }
+
+        /* NotebookLM 로고 */
+        .notebook-logo {
+            top: 95%;
+            right: 1%;
+            width: 10%;
+            height: 2.5%;
+            background-color: #e8e8e8;
+            font-size: 11px;
+            font-weight: 500;
+            color: #666;
+            justify-content: flex-end;
+            padding-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="lightrag-infographic.png" alt="LightRAG Infographic">
+
+        <!-- 메인 타이틀 -->
+        <div class="text-overlay main-title">LightRAG: 그래프 구조로 진화하는 차세대 검색 증강 생성</div>
+
+        <!-- 서브 설명 -->
+        <div class="text-overlay sub-description">LightRAG는 그래프 기반 인덱싱과 이중 수준 검색 방식을 통해 기존 RAG의 한계를 극복하고, 검색 효율성과 응답 품질을 향상시킵니다.<br><br>개발자들은 분절된 정보 검색 문제를 해결하기 위해, 이제 그래프 구조를 활용하여 복잡한 데이터의 상호의존성을 파악하는 새로운 RAG 시스템이 필요합니다.</div>
+
+        <!-- 좌측 파란 영역 -->
+        <div class="text-overlay high-level-search">고수준 검색</div>
+        <div class="text-overlay low-level-search">저수준 검색</div>
+        <div class="text-overlay data-indexing">데이터 인덱싱</div>
+
+        <!-- 기존 RAG 시스템의 한계 -->
+        <div class="text-overlay rag-limit-title">기존 RAG 시스템의 한계</div>
+        <div class="text-overlay rag-limit-1-title">평면적 데이터 표현</div>
+        <div class="text-overlay rag-limit-1-desc">계층 간의 독립된 검색을 파악하기 어렵고 정보의 깊이가 부족합니다.</div>
+        <div class="text-overlay rag-limit-2-title">맥락 인식 부재</div>
+        <div class="text-overlay rag-limit-2-desc">여러 문서에 걸친 종합적 이해가 필요한 질문에 대해 분절된 답변을 생성합니다.</div>
+        <div class="text-overlay rag-limit-3-title">정보 통합의 어려움</div>
+        <div class="text-overlay rag-limit-3-desc">분리된 정보 조각들을 융합하여 일관된 통찰을 만드는 데 어려움을 겪습니다.</div>
+
+        <!-- LightRAG의 핵심 작동 방식 -->
+        <div class="text-overlay lightrag-method-title">LightRAG의 핵심 작동 방식</div>
+        <div class="text-overlay method-1-title">그래프 기반 텍스트 인덱싱</div>
+        <div class="text-overlay method-1-desc">텍스트에서 개체와 관계를 추출하여 지식 그래프로 구조화합니다.</div>
+        <div class="text-overlay method-2-title">이중 수준 검색 패러다임</div>
+        <div class="text-overlay method-2-desc">구체적 원본(저수준)과 추상적 주제(고수준)를 모두 검색하여 조응성을 높입니다.</div>
+        <div class="text-overlay method-3-title">그래프-벡터 통합 검색</div>
+        <div class="text-overlay method-3-desc">그래프 구조와 벡터 통합을 결합하여 빠르고 심층적 정보 검색을 실현합니다.</div>
+
+        <!-- 전통적 방식의 비효율성 -->
+        <div class="text-overlay inefficiency-title">전통적 방식의 비효율성</div>
+        <div class="text-overlay inefficiency-1-title">높은 업데이트 비용</div>
+        <div class="text-overlay inefficiency-1-desc">새로운 데이터 추가 시 전체 인덱스를 재구축해야 해 시간과 비용이 많이 소모됩니다.</div>
+        <div class="text-overlay inefficiency-2-title">글로벌 맥락 누락</div>
+        <div class="text-overlay inefficiency-2-desc">청크(chunk) 단위 검색은 문서간의 맥락과 관계 간의 숨겨진 연결성을 놓치기 쉽습니다.</div>
+
+        <!-- 하단 빨간 영역 -->
+        <div class="text-overlay red-bottom-1-title">저수준 정보 누락</div>
+        <div class="text-overlay red-bottom-1-desc">새로운 검색 특정 데이터 지원시 인덱스를 복구축해야 해 시간과 비용이 많이 소모됩니다.</div>
+        <div class="text-overlay red-bottom-2-title">정보 통합의 어려움</div>
+        <div class="text-overlay red-bottom-2-desc">분리된 정보 조각들을 통합하여 일관된 통찰을 만드는 데 어려움을 겪습니다.</div>
+        <div class="text-overlay red-bottom-3-title">대규모 데이터 처리 한계</div>
+        <div class="text-overlay red-bottom-3-desc">데이터 량이 많아질수록 검색 효율성이 급격히 저하됩니다.</div>
+
+        <!-- LightRAG가 제공하는 전략적 이점 -->
+        <div class="text-overlay advantage-title">LightRAG가 제공하는 전략적 이점</div>
+        <div class="text-overlay advantage-1-title">신속한 증분 업데이트</div>
+        <div class="text-overlay advantage-1-desc">전체 재색인 없이 새로운 지식을 신속히 효율적으로 통합하여 시스템을 최신 상태로 유지합니다.</div>
+        <div class="text-overlay advantage-2-title">포괄적인 정보 이해</div>
+        <div class="text-overlay advantage-2-desc">다중 홉(multi-hop) 정보 탐색이 가능해져 복잡한 질의에 대한 깊이 있는 답변을 제공합니다.</div>
+        <div class="text-overlay advantage-3-title">비용 효율성</div>
+        <div class="text-overlay advantage-3-desc">기존 그래프 RAG 대비 API 호출과 토큰 사용량을 크게 절감하여 운영 비용을 획기적으로 절감합니다.</div>
+
+        <!-- Why it matters -->
+        <div class="text-overlay why-title">Why it matters</div>
+        <div class="text-overlay why-desc">LightRAG의 등장은 단순한 키워드나 청크 검색을 넘어 데이터의 '관계'를 이해하는 RAG 시대로의 전환을 의미합니다. 이는 AI가 생성하는 답변의 깊이와 신뢰도를 한 차원 높여, 대규모의 독자적 자사 베이스를 다루는 모든 응용 분야에 큰 영향을 미칩니다. 이제 기업과 개발자들은 비효율적인 기존 방식을 고수할 것인지, 아니면 LightRAG 같은 그래프 기반 접근법을 채택하여 더 빠르고 스마트한 정보 서비스를 제공할 것인지 선택해야 합니다.</div>
+
+        <!-- Glossary Strip -->
+        <div class="text-overlay glossary-title">Glossary Strip</div>
+        <div class="text-overlay glossary-content">검색 증강 생성(RAG): 대규모 언어 모델이 외부 지식 데이터베이스에서 관련 정보를 검색하여 답변의 정확성과 최신성을 높이는 기술입니다.<br>그래프 기반 인덱싱(Graph-based Indexing): 텍스트 내의 개체(노드)와 그들 간의 관계(엣지)를 추출하여 구조화된 지식 그래프 정보를 만드는 과정입니다.<br>이중 수준 검색(Dual-level Retrieval): 사용자의 질의에 따라 구체적인 개체 정보(저수준)와 전반적인 주제 및 요약(고수준)을 모두 반환하는 검색 방식입니다.<br>증분 업데이트(Incremental Update): 전체 데이터를 재처리하지 않고 새로 추가된 정보만 기존 저장 그래프에 효율적으로 통합하는 기능입니다.</div>
+
+        <!-- NotebookLM 로고 -->
+        <div class="text-overlay notebook-logo">NotebookLM</div>
+    </div>
+</body>
+</html>
