@@ -3508,8 +3508,8 @@
                 `;
 
                 // Refresh badge
-                document.getElementById(`aiHeader - ${repoId} `).innerHTML = `
-                < div class="ai-title" >✨ AI Insight · Tech Decision Card</div >
+                document.getElementById(`aiHeader-${repoId}`).innerHTML = `
+                    <div class="ai-title">✨ AI Insight · Tech Decision Card</div>
                     <div style="display:flex; align-items:center; gap:8px;">
                         <button class="ai-btn" onclick="generateAISummary('${repo.id}')" id="aiBtn-${repo.id}">🔄 Re-Analyze</button>
                     </div>
