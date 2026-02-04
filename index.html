@@ -3090,26 +3090,31 @@
                         </div>
                     </div>
 
-                    <!-- 2. Quick Start (Entrance) -->
+                    <!-- 2. Quick Start (3-Step Identity Experience) -->
                     <div class="v2-section" style="border-left: 4px solid #10b981; background: #f0fdf4; padding:8px 10px;">
                         <h4 style="color:#059669; margin-bottom:4px;">⚡ Quick Start</h4>
                         <div class="v2-code-block">
-                            <div style="margin-bottom:2px; color:#9ca3af; font-size:0.7rem;"># Install</div>
+                            <div style="margin-bottom:2px; color:#9ca3af; font-size:0.7rem;"># 1. Install</div>
                             <div style="margin-bottom:4px; font-weight:bold; color:#fff; font-size:0.8rem;">
                                 $ ${card.quick_start.install_cmd} 
                                 <button class="v2-copy-btn" onclick="navigator.clipboard.writeText('${card.quick_start.install_cmd}')">Copy</button>
                             </div>
                             
-                            ${card.quick_start.usage_cmd ? `
+                            ${(card.quick_start.verify_cmd || card.quick_start.usage_cmd) ? `
                             <div style="border-top:1px solid #374151; margin:4px 0; padding-top:4px;">
-                                <div style="color:#9ca3af; font-size:0.7rem;"># Verify</div>
-                                <div style="font-size:0.8rem;">$ ${card.quick_start.usage_cmd}</div>
+                                <div style="color:#9ca3af; font-size:0.7rem;"># 2. Verify</div>
+                                <div style="font-size:0.8rem;">$ ${card.quick_start.verify_cmd || card.quick_start.usage_cmd}</div>
                             </div>` : ''}
                             
-                            ${card.quick_start.success_criteria ? `
+                            ${card.quick_start.try_cmd ? `
+                            <div style="border-top:1px solid #374151; margin:4px 0; padding-top:4px; background:#065f4620; margin:-4px -8px -6px -8px; padding:6px 8px; border-radius:0 0 4px 4px;">
+                                <div style="color:#34d399; font-size:0.7rem; font-weight:600;">⭐ 3. Try This First (핵심!)</div>
+                                <div style="font-size:0.8rem; color:#fff; font-weight:bold;">$ ${card.quick_start.try_cmd}</div>
+                                ${card.quick_start.try_result ? `<div style="margin-top:2px; font-size:0.7rem; color:#86efac;">✔ ${card.quick_start.try_result}</div>` : ''}
+                            </div>` : (card.quick_start.success_criteria ? `
                             <div style="margin-top:4px; font-size:0.75rem; color:#86efac;">
                                 ✔ Expect: "${card.quick_start.success_criteria}"
-                            </div>` : ''}
+                            </div>` : '')}
                         </div>
                     </div>
 
@@ -3428,8 +3433,9 @@
                   },
                   "quick_start": {
                     "install_cmd": "설치 명령어 (예: npm install package)",
-                    "usage_cmd": "검증용 실행 명령어 (Optional)",
-                    "success_criteria": "설치 성공 시 확인해야 할 출력 메시지 예시"
+                    "verify_cmd": "설치 확인 명령어 (예: package --version)",
+                    "try_cmd": "이 도구의 정체성을 30초 안에 체험하는 명령어 (예: package list-skills, package demo). --help는 지양.",
+                    "try_result": "try_cmd 실행 시 기대되는 핵심 출력 (예: '기본 제공 스킬 목록 출력')"
                   },
                   "recipe": {
                     "context": "통합 레이어 (예: React Component, FastAPI Middleware)",
