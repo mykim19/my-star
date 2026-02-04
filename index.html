@@ -601,6 +601,35 @@
             gap: 4px;
         }
 
+        /* Collection Badges */
+        .collection-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            background: #e0f2fe;
+            color: #0369a1;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+
+        .collection-badge:hover {
+            background: #bae6fd;
+        }
+
+        .remove-x {
+            font-weight: bold;
+            color: #0ea5e9;
+            cursor: pointer;
+            padding: 0 2px;
+        }
+
+        .remove-x:hover {
+            color: #0284c7;
+        }
+
         /* --- v2 AI Tech Card Styles --- */
         .repo-card-v2 {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -2388,23 +2417,35 @@
 
         // Show detail modal
         window.showDetail = function (repoId) {
-            const repo = allRepos.find(r => r.id == repoId);
-            if (!repo) return;
+            try {
+                const repo = allRepos.find(r => r.id == repoId);
+                if (!repo) return;
 
-            document.getElementById('modalTitle').textContent = repo.name;
-            document.getElementById('modalOwner').textContent = `@${repo.owner.login} `;
-            document.getElementById('modalContent').innerHTML = generateGuide(repo) + renderUserDataSection(repo);
-            document.getElementById('modalGithubLink').href = repo.html_url;
+                document.getElementById('modalTitle').textContent = repo.name;
+                document.getElementById('modalOwner').textContent = `@${repo.owner.login} `;
 
-            const homepageBtn = document.getElementById('modalHomepage');
-            if (repo.homepage) {
-                homepageBtn.href = repo.homepage;
-                homepageBtn.classList.remove('hide');
-            } else {
-                homepageBtn.classList.add('hide');
+                // Debugging
+                // console.log('Generating guide for:', repo.name);
+
+                const guideHtml = generateGuide(repo);
+                const userHtml = renderUserDataSection(repo);
+
+                document.getElementById('modalContent').innerHTML = guideHtml + userHtml;
+                document.getElementById('modalGithubLink').href = repo.html_url;
+
+                const homepageBtn = document.getElementById('modalHomepage');
+                if (repo.homepage) {
+                    homepageBtn.href = repo.homepage;
+                    homepageBtn.classList.remove('hide');
+                } else {
+                    homepageBtn.classList.add('hide');
+                }
+
+                detailModal.classList.add('show');
+            } catch (err) {
+                console.error("Detail Error:", err);
+                alert("상세 정보를 불러오는 중 오류가 발생했습니다: " + err.message);
             }
-
-            detailModal.classList.add('show');
         };
 
         // Render Repo List Item
@@ -2986,6 +3027,42 @@
                 </div>
             `;
         }
+
+        // Render Collections for Repo (in Modal)
+        function renderRepoCollections(repoId) {
+            const repoCollections = collections.filter(c => c.repoIds.includes(String(repoId)));
+            if (repoCollections.length === 0) return '<span style="color:#d1d5db; font-size:0.8rem;">No collections</span>';
+
+            return repoCollections.map(c => `
+                <span class="collection-badge" onclick="filterByCollection('${c.id}')">
+                    📁 ${c.name}
+                    <span class="remove-x" onclick="event.stopPropagation(); removeFromCollection('${c.id}', '${repoId}')">&times;</span>
+                </span>
+            `).join('');
+        }
+
+        // Add to Collection from Modal
+        window.addToCollectionFromModal = function (repoId) {
+            const select = document.getElementById('collectionSelect');
+            const collectionId = select.value;
+            if (!collectionId) return;
+
+            StorageManager.addRepoToCollection(collectionId, repoId);
+
+            // Refresh
+            document.getElementById('repoCollectionList').innerHTML = renderRepoCollections(repoId);
+            select.value = ''; // Reset
+        };
+
+        // Remove from Collection
+        window.removeFromCollection = function (collectionId, repoId) {
+            StorageManager.removeRepoFromCollection(collectionId, repoId);
+            // Refresh if in modal
+            const listEl = document.getElementById('repoCollectionList');
+            if (listEl) {
+                listEl.innerHTML = renderRepoCollections(repoId);
+            }
+        };
 
         // Render User Data Section (Hybrid)
         function renderUserDataSection(repo) {
