@@ -1624,8 +1624,8 @@
             'Data': ['data', 'analytics', 'visualization', 'pandas', 'numpy', 'jupyter', 'dashboard']
         };
 
-        // State
         let allRepos = [];
+        let collections = [];
         let filteredRepos = [];
         let currentPage = 1;
 
@@ -1785,6 +1785,10 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             updateHistoryList();
+
+            // Load Collections
+            collections = StorageManager.getCollections();
+
             // Auto-fill last user
             const list = StorageManager.getSearchHistory();
             if (list.length > 0) {
