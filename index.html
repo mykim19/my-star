@@ -471,6 +471,80 @@
             display: block;
         }
 
+        /* List View */
+        .repos-list {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .repos-list.show {
+            display: flex;
+        }
+
+        .repo-list-item {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .repo-list-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .repo-list-info {
+            flex: 1;
+            min-width: 0;
+            /* for truncation */
+        }
+
+        .repo-list-name {
+            font-weight: 700;
+            color: #333;
+            font-size: 1.05rem;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .repo-list-desc {
+            color: #666;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .repo-list-meta {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.85rem;
+            color: #888;
+            flex-shrink: 0;
+        }
+
+        /* AI Badge */
+        .ai-status-badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            background: #fce7f3;
+            color: #db2777;
+            border-radius: 4px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
         .load-more-btn {
             padding: 14px 40px;
             background: #764ba2;
@@ -1145,6 +1219,7 @@
 
             <div class="view-toggle">
                 <button class="view-btn active" id="viewGridBtn" onclick="switchView('grid')">▦ 그리드</button>
+                <button class="view-btn" id="viewListBtn" onclick="switchView('list')">☰ 리스트</button>
                 <button class="view-btn" id="viewGraphBtn" onclick="switchView('graph')">🕸️ 관계망</button>
             </div>
         </div>
@@ -1166,7 +1241,9 @@
         </div>
 
         <!-- Repos Grid -->
+        <!-- Repos Grid -->
         <div id="reposGrid" class="repos-grid"></div>
+        <div id="reposList" class="repos-list"></div>
         <div id="graphContainer" class="graph-container"></div>
 
         <!-- Load More -->
@@ -2087,14 +2164,53 @@
             detailModal.classList.add('show');
         };
 
+        // Render Repo List Item
+        function renderRepoListItem(repo) {
+            const langColor = languageColors[repo.language] || '#888';
+            const health = calculateRepoHealth(repo);
+            const isAIAnalyzed = !!repo.userData?.aiSummary;
+
+            return `
+                <div class="repo-list-item" onclick="showDetail('${repo.id}')">
+                    <div class="repo-list-info">
+                        <div class="repo-list-name">
+                            ${repo.name}
+                            ${getPurposeBadge(repo.userData?.purpose)}
+                            ${isAIAnalyzed ? `<span class="ai-status-badge">✨ AI Analyzed</span>` : ''}
+                        </div>
+                        <div class="repo-list-desc">
+                            ${repo.description || '설명 없음'}
+                        </div>
+                    </div>
+                    <div class="repo-list-meta">
+                        ${repo.language ? `
+                            <span style="display:flex; align-items:center; gap:5px;">
+                                <span class="language-dot" style="background: ${langColor}"></span>
+                                ${repo.language}
+                            </span>
+                        ` : ''}
+                        <span>⭐ ${formatNumber(repo.stargazers_count)}</span>
+                        <span class="health-badge ${health.color}" style="font-size:0.75rem; padding:2px 6px;">
+                            ${health.label}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+
         // Render repos
         function renderRepos(repos, append = false) {
+            const gridEl = document.getElementById('reposGrid');
+            const listEl = document.getElementById('reposList');
+
             if (!append) {
-                reposGrid.innerHTML = '';
+                gridEl.innerHTML = '';
+                listEl.innerHTML = '';
             }
 
             repos.forEach(repo => {
-                reposGrid.innerHTML += renderRepoCard(repo);
+                gridEl.innerHTML += renderRepoCard(repo);
+                listEl.innerHTML += renderRepoListItem(repo);
             });
         }
 
@@ -2218,16 +2334,29 @@
         window.switchView = function (view) {
             currentView = view;
             document.getElementById('viewGridBtn').classList.toggle('active', view === 'grid');
+            document.getElementById('viewListBtn').classList.toggle('active', view === 'list');
             document.getElementById('viewGraphBtn').classList.toggle('active', view === 'graph');
 
+            const gridEl = document.getElementById('reposGrid');
+            const listEl = document.getElementById('reposList');
+            const graphEl = document.getElementById('graphContainer');
+            const loadMoreEl = document.getElementById('loadMoreSection');
+
             if (view === 'grid') {
-                document.getElementById('reposGrid').classList.add('show');
-                document.getElementById('loadMoreSection').classList.add('show');
-                document.getElementById('graphContainer').classList.remove('show');
+                gridEl.classList.add('show');
+                listEl.classList.remove('show');
+                graphEl.classList.remove('show');
+                loadMoreEl.classList.add('show');
+            } else if (view === 'list') {
+                gridEl.classList.remove('show');
+                listEl.classList.add('show');
+                graphEl.classList.remove('show');
+                loadMoreEl.classList.add('show');
             } else {
-                document.getElementById('reposGrid').classList.remove('show');
-                document.getElementById('loadMoreSection').classList.remove('show');
-                document.getElementById('graphContainer').classList.add('show');
+                gridEl.classList.remove('show');
+                listEl.classList.remove('show');
+                graphEl.classList.add('show');
+                loadMoreEl.classList.remove('show');
                 renderGraph();
             }
         };
