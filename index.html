@@ -1554,6 +1554,13 @@
                     <option value="using">🛠 사용 중</option>
                     <option value="memo">📝 메모 있음</option>
                 </select>
+                <select id="decisionFilter" class="sort-select" style="border-color:#cbd5e1; color:#475569;">
+                    <option value="all">모든 결정</option>
+                    <option value="adopt">✅ Adopt</option>
+                    <option value="hold">⏸ Hold</option>
+                    <option value="avoid">🚫 Avoid</option>
+                    <option value="none">미결정 (None)</option>
+                </select>
             </div>
             <div id="categoryChips" class="category-chips">
                 <button class="chip active" data-category="all">전체</button>
@@ -1743,6 +1750,7 @@
         let isLoading = false;
         let currentCategory = 'all';
         let currentPurpose = 'all';
+        let currentDecision = 'all'; // New
         let currentCollection = 'all';
         let currentView = 'grid'; // 'grid' or 'graph'
         const perPage = 100;
@@ -1921,6 +1929,7 @@
         const filterInput = document.getElementById('filterInput');
         const sortSelect = document.getElementById('sortSelect');
         const purposeFilter = document.getElementById('purposeFilter');
+        const decisionFilter = document.getElementById('decisionFilter'); // New
         const categoryChips = document.getElementById('categoryChips');
         const collectionsBar = document.getElementById('collectionsBar');
         const detailModal = document.getElementById('detailModal');
@@ -1943,6 +1952,7 @@
         filterInput.addEventListener('input', debounce(handleFilter, 300));
         sortSelect.addEventListener('change', handleSort);
         purposeFilter.addEventListener('change', handlePurposeFilter);
+        decisionFilter.addEventListener('change', handleDecisionFilter); // New
         loadMoreBtn.addEventListener('click', loadMore);
         closeModal.addEventListener('click', () => detailModal.classList.remove('show'));
         detailModal.addEventListener('click', (e) => {
@@ -2628,6 +2638,12 @@
             `;
         }
 
+        // Handle Decision Filter
+        function handleDecisionFilter() {
+            currentDecision = decisionFilter.value;
+            handleFilter();
+        }
+
         // Render repos
         function renderRepos(repos, append = false) {
             const gridEl = document.getElementById('reposGrid');
@@ -2904,7 +2920,16 @@
                     matchesCollection = colIds.includes(currentCollection);
                 }
 
-                return matchesSearch && matchesCategory && matchesPurpose && matchesCollection;
+                let matchesDecision = true;
+                if (currentDecision !== 'all') {
+                    if (currentDecision === 'none') {
+                        matchesDecision = !repo.userData?.decision_snapshot;
+                    } else {
+                        matchesDecision = repo.userData?.decision_snapshot === currentDecision;
+                    }
+                }
+
+                return matchesSearch && matchesCategory && matchesPurpose && matchesCollection && matchesDecision;
             });
 
             currentPage = 1;
