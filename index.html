@@ -2134,6 +2134,11 @@
             const looseMatch = markdown.match(/한\s*줄\s*정의.*?[:：]\s*(.*)/);
             if (looseMatch && looseMatch[1]) return looseMatch[1].replace(/\*\*/g, '').trim();
 
+            // Strategy 4 (Final Fallback): Content under "Who & Why" or "Summary" WITHOUT bullet (Legacy/Loose format)
+            // Just grabs the first meaningful line after the header
+            const bodyMatch = markdown.match(/##\s*.*?(?:Who\s*&\s*Why|핵심\s*가치|요약|개요).*?[\r\n]+([^\r\n#\-*]+)/);
+            if (bodyMatch && bodyMatch[1]) return bodyMatch[1].trim();
+
             return null;
         }
 
