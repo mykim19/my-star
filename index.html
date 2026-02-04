@@ -3174,7 +3174,7 @@
                              ${card.recipe.output ? `<div style="flex:1; min-width:100px; border-left:1px solid #e5e7eb; padding-left:8px;"><strong>📤 Output</strong><br><span style="color:#4b5563;">${card.recipe.output}</span></div>` : ''}
                         </div>` : ''}
 
-                        <div class="v2-code-block">
+                        <div class="v2-code-block" style="max-height:200px; overflow-y:auto;">
                             <pre style="margin:0; white-space:pre-wrap; line-height:1.3;">${card.recipe.code_block}</pre>
                             <button class="v2-copy-btn" onclick="navigator.clipboard.writeText(\`${card.recipe.code_block.replace(/`/g, '\\`')}\`)">Copy Recipe</button>
                         </div>
@@ -3488,7 +3488,7 @@
                     "input": "입력 데이터 (예: Claude Code Plan JSON)",
                     "process": "핵심 로직 (예: Node/Edge 파싱 및 레이아웃)",
                     "output": "최종 출력 (예: Interactive Mermaid Diagram)",
-                    "code_block": "복사해서 바로 실행 가능한 Minimal Working Example (import부터 시작)",
+                    "code_block": "핵심 기능만 보여주는 Minimal Working Example. 반드시 10줄 이내! import + 핵심 호출 1~2줄만.",
                     "steps": ["단계 1: 설치", "단계 2: 설정", "단계 3: 실행"]
                   },
                   "pitfalls": ["사용 시 주의해야 할 성능/보안/환경 제약사항 (3개 이내)"],
