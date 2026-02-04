@@ -3133,30 +3133,32 @@
                         </div>
                     </div>
 
-                    <!-- 2. Quick Start (3-Step Identity Experience) -->
-                    <div class="v2-section" style="border-left: 4px solid #10b981; background: #f0fdf4; padding:8px 10px;">
-                        <h4 style="color:#059669; margin-bottom:4px;">⚡ Quick Start</h4>
-                        <div class="v2-code-block">
-                            <div style="margin-bottom:2px; color:#9ca3af; font-size:0.7rem;"># 1. Install</div>
-                            <div style="margin-bottom:4px; font-weight:bold; color:#fff; font-size:0.8rem;">
-                                $ ${card.quick_start.install_cmd} 
+                    <!-- 2. Quick Start (Compact 3-Step) -->
+                    <div class="v2-section" style="border-left: 4px solid #10b981; background: #f0fdf4; padding:6px 10px;">
+                        <h4 style="color:#059669; margin-bottom:4px; font-size:0.85rem;">⚡ Quick Start</h4>
+                        <div class="v2-code-block" style="padding:8px 10px; font-size:0.75rem; line-height:1.4;">
+                            <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:3px;">
+                                <span style="color:#6b7280; font-size:0.65rem; min-width:55px;"># 1. Install</span>
+                                <code style="color:#fff; font-weight:600;">$ ${card.quick_start.install_cmd}</code>
                                 <button class="v2-copy-btn" onclick="navigator.clipboard.writeText('${card.quick_start.install_cmd}')">Copy</button>
                             </div>
                             
                             ${(card.quick_start.verify_cmd || card.quick_start.usage_cmd) ? `
-                            <div style="border-top:1px solid #374151; margin:4px 0; padding-top:4px;">
-                                <div style="color:#9ca3af; font-size:0.7rem;"># 2. Verify</div>
-                                <div style="font-size:0.8rem;">$ ${card.quick_start.verify_cmd || card.quick_start.usage_cmd}</div>
+                            <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:3px; padding-top:3px; border-top:1px solid #374151;">
+                                <span style="color:#6b7280; font-size:0.65rem; min-width:55px;"># 2. Verify</span>
+                                <code style="color:#d1d5db;">$ ${card.quick_start.verify_cmd || card.quick_start.usage_cmd}</code>
                             </div>` : ''}
                             
                             ${card.quick_start.try_cmd ? `
-                            <div style="border-top:1px solid #374151; margin:4px 0; padding-top:4px; background:#065f4620; margin:-4px -8px -6px -8px; padding:6px 8px; border-radius:0 0 4px 4px;">
-                                <div style="color:#34d399; font-size:0.7rem; font-weight:600;">⭐ 3. Try This First (핵심!)</div>
-                                <div style="font-size:0.8rem; color:#fff; font-weight:bold;">$ ${card.quick_start.try_cmd}</div>
-                                ${card.quick_start.try_result ? `<div style="margin-top:2px; font-size:0.7rem; color:#86efac;">✔ ${card.quick_start.try_result}</div>` : ''}
+                            <div style="background:#065f4630; margin:4px -10px -8px -10px; padding:6px 10px; border-radius:0 0 4px 4px;">
+                                <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:2px;">
+                                    <span style="color:#34d399; font-size:0.65rem; min-width:55px; font-weight:600;">⭐ 3. Try</span>
+                                    <code style="color:#fff; font-weight:bold;">$ ${card.quick_start.try_cmd}</code>
+                                </div>
+                                ${card.quick_start.try_result ? `<div style="margin-left:61px; font-size:0.7rem; color:#86efac; background:#065f4650; padding:2px 6px; border-radius:3px; display:inline-block;">✔ Expect: ${card.quick_start.try_result}</div>` : ''}
                             </div>` : (card.quick_start.success_criteria ? `
-                            <div style="margin-top:4px; font-size:0.75rem; color:#86efac;">
-                                ✔ Expect: "${card.quick_start.success_criteria}"
+                            <div style="margin-top:4px; font-size:0.7rem; color:#86efac; background:#065f4650; padding:2px 6px; border-radius:3px; display:inline-block;">
+                                ✔ Expect: ${card.quick_start.success_criteria}
                             </div>` : '')}
                         </div>
                     </div>
