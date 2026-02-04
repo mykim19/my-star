@@ -684,28 +684,38 @@
         }
 
         .v2-section {
-            margin-bottom: 12px;
+            margin-bottom: 6px;
             background: #fff;
-            padding: 10px 12px;
+            padding: 6px 10px;
             border: 1px solid #e5e7eb;
-            border-radius: 6px;
+            border-radius: 4px;
         }
 
         .v2-section h4 {
-            margin: 0 0 8px 0;
-            font-size: 0.85rem;
+            margin: 0 0 4px 0;
+            font-size: 0.8rem;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.04em;
             color: #6b7280;
             font-weight: 600;
         }
 
         .v2-section ul {
             margin: 0;
-            padding-left: 18px;
+            padding-left: 16px;
             color: #374151;
+            font-size: 0.8rem;
+            line-height: 1.3;
+        }
+
+        .v2-section ul li {
+            margin-bottom: 2px;
+        }
+
+        .v2-section p {
+            margin: 0 0 4px 0;
+            line-height: 1.35;
             font-size: 0.85rem;
-            line-height: 1.4;
         }
 
         .v2-why {
@@ -716,29 +726,35 @@
         .v2-code-block {
             background: #1f2937;
             color: #f3f4f6;
-            padding: 8px 10px;
-            border-radius: 6px;
+            padding: 6px 8px;
+            border-radius: 4px;
             font-family: 'Fira Code', monospace;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             position: relative;
             overflow-x: auto;
+            line-height: 1.3;
+        }
+
+        .v2-code-block pre {
+            margin: 0;
+            line-height: 1.3;
         }
 
         .v2-copy-btn {
             position: absolute;
-            right: 8px;
-            top: 6px;
-            background: rgba(255, 255, 255, 0.1);
+            right: 4px;
+            top: 4px;
+            background: rgba(255, 255, 255, 0.15);
             color: #fff;
             border: none;
-            border-radius: 4px;
-            padding: 2px 8px;
-            font-size: 0.75rem;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 0.7rem;
             cursor: pointer;
         }
 
         .v2-copy-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.25);
         }
 
         /* Decision Toggle */
@@ -3075,23 +3091,23 @@
                     </div>
 
                     <!-- 2. Quick Start (Entrance) -->
-                    <div class="v2-section" style="border-left: 4px solid #10b981; background: #f0fdf4;">
-                        <h4 style="color:#059669;">⚡ Quick Start</h4>
+                    <div class="v2-section" style="border-left: 4px solid #10b981; background: #f0fdf4; padding:8px 10px;">
+                        <h4 style="color:#059669; margin-bottom:4px;">⚡ Quick Start</h4>
                         <div class="v2-code-block">
-                            <div style="margin-bottom:8px; color:#9ca3af; font-size:0.8rem;"># Install</div>
-                            <div style="margin-bottom:12px; font-weight:bold; color:#fff;">
+                            <div style="margin-bottom:2px; color:#9ca3af; font-size:0.7rem;"># Install</div>
+                            <div style="margin-bottom:4px; font-weight:bold; color:#fff; font-size:0.8rem;">
                                 $ ${card.quick_start.install_cmd} 
                                 <button class="v2-copy-btn" onclick="navigator.clipboard.writeText('${card.quick_start.install_cmd}')">Copy</button>
                             </div>
                             
                             ${card.quick_start.usage_cmd ? `
-                            <div style="border-top:1px solid #374151; margin:8px 0; padding-top:8px;">
-                                <div style="color:#9ca3af; font-size:0.8rem;"># Verify</div>
-                                <div>$ ${card.quick_start.usage_cmd}</div>
+                            <div style="border-top:1px solid #374151; margin:4px 0; padding-top:4px;">
+                                <div style="color:#9ca3af; font-size:0.7rem;"># Verify</div>
+                                <div style="font-size:0.8rem;">$ ${card.quick_start.usage_cmd}</div>
                             </div>` : ''}
                             
                             ${card.quick_start.success_criteria ? `
-                            <div style="margin-top:8px; font-size:0.85rem; color:#86efac;">
+                            <div style="margin-top:4px; font-size:0.75rem; color:#86efac;">
                                 ✔ Expect: "${card.quick_start.success_criteria}"
                             </div>` : ''}
                         </div>
@@ -3102,33 +3118,33 @@
                         <h4>🍳 Integration Recipe: ${card.recipe.context}</h4>
                         
                         ${(card.recipe.input || card.recipe.process || card.recipe.output) ? `
-                        <div style="display:flex; gap:12px; margin-bottom:12px; font-size:0.85rem; background:#f9fafb; padding:12px; border-radius:6px; flex-wrap:wrap; border:1px solid #e5e7eb;">
-                             ${card.recipe.input ? `<div style="flex:1; min-width:140px;"><strong>📥 Input</strong><br><span style="color:#4b5563;">${card.recipe.input}</span></div>` : ''}
-                             ${card.recipe.process ? `<div style="flex:1; min-width:140px; border-left:1px solid #e5e7eb; padding-left:12px;"><strong>⚙️ Process</strong><br><span style="color:#4b5563;">${card.recipe.process}</span></div>` : ''}
-                             ${card.recipe.output ? `<div style="flex:1; min-width:140px; border-left:1px solid #e5e7eb; padding-left:12px;"><strong>📤 Output</strong><br><span style="color:#4b5563;">${card.recipe.output}</span></div>` : ''}
+                        <div style="display:flex; gap:8px; margin-bottom:6px; font-size:0.75rem; background:#f9fafb; padding:6px 8px; border-radius:4px; flex-wrap:wrap; border:1px solid #e5e7eb;">
+                             ${card.recipe.input ? `<div style="flex:1; min-width:100px;"><strong>📥 Input</strong><br><span style="color:#4b5563;">${card.recipe.input}</span></div>` : ''}
+                             ${card.recipe.process ? `<div style="flex:1; min-width:100px; border-left:1px solid #e5e7eb; padding-left:8px;"><strong>⚙️ Process</strong><br><span style="color:#4b5563;">${card.recipe.process}</span></div>` : ''}
+                             ${card.recipe.output ? `<div style="flex:1; min-width:100px; border-left:1px solid #e5e7eb; padding-left:8px;"><strong>📤 Output</strong><br><span style="color:#4b5563;">${card.recipe.output}</span></div>` : ''}
                         </div>` : ''}
 
                         <div class="v2-code-block">
-                            <pre style="margin:0; white-space:pre-wrap;">${card.recipe.code_block}</pre>
+                            <pre style="margin:0; white-space:pre-wrap; line-height:1.3;">${card.recipe.code_block}</pre>
                             <button class="v2-copy-btn" onclick="navigator.clipboard.writeText(\`${card.recipe.code_block.replace(/`/g, '\\`')}\`)">Copy Recipe</button>
                         </div>
-                        <ol style="margin-top:12px; padding-left:20px; color:#4b5563; font-size:0.9rem;">
-                            ${(card.recipe.steps || []).map(s => `<li>${s}</li>`).join('')}
+                        <ol style="margin:4px 0 0 0; padding-left:18px; color:#4b5563; font-size:0.8rem; line-height:1.3;">
+                            ${(card.recipe.steps || []).map(s => `<li style="margin-bottom:1px;">${s}</li>`).join('')}
                         </ol>
                     </div>
 
                     <!-- 4. Reality Check (Pitfalls) -->
-                    <div class="v2-section" style="background:#fff1f2; border:1px solid #fecaca;">
-                        <h4 style="color:#b91c1c;">⚠️ Reality Check (Pitfalls)</h4>
-                        <ul style="color:#991b1b;">
-                            ${(card.pitfalls || []).map(p => `<li>${p}</li>`).join('')}
+                    <div class="v2-section" style="background:#fff1f2; border:1px solid #fecaca; padding:6px 10px;">
+                        <h4 style="color:#b91c1c; margin-bottom:4px;">⚠️ Reality Check</h4>
+                        <ul style="color:#991b1b; margin:0; font-size:0.8rem; line-height:1.3;">
+                            ${(card.pitfalls || []).map(p => `<li style="margin-bottom:1px;">${p}</li>`).join('')}
                         </ul>
                     </div>
                     
                     <!-- 5. Outcome -->
-                    <div class="v2-section">
-                        <h4>🎁 What You Get</h4>
-                        <p style="color:#374151; font-size:0.95rem;">${card.what_you_get}</p>
+                    <div class="v2-section" style="padding:6px 10px;">
+                        <h4 style="margin-bottom:2px;">🎁 What You Get</h4>
+                        <p style="color:#374151; font-size:0.85rem; margin:0; line-height:1.35;">${card.what_you_get}</p>
                     </div>
 
                     <!-- Meta -->
