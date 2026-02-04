@@ -2111,6 +2111,13 @@
             return cases[category] || cases['Others'];
         }
 
+        // Extract AI One-Liner
+        function extractAIOneLiner(markdown) {
+            if (!markdown) return null;
+            const match = markdown.match(/한 줄 정의\*\*?: (.*)/);
+            return match ? match[1].trim() : null;
+        }
+
         // Format number
         function formatNumber(num) {
             if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -2135,6 +2142,10 @@
         function renderRepoCard(repo) {
             const langColor = languageColors[repo.language] || '#888';
             const health = calculateRepoHealth(repo);
+            const aiOneLiner = extractAIOneLiner(repo.userData?.aiSummary);
+            const description = aiOneLiner
+                ? `<span style="color:#4b5563; font-weight:600;">✨ ${aiOneLiner}</span>`
+                : (repo.description || '설명 없음');
 
             return `
                 <div class="repo-card" onclick="showDetail('${repo.id}')">
@@ -2151,7 +2162,7 @@
                             <span class="health-dot"></span> ${health.label}
                         </span>
                     </div>
-                    <p class="repo-desc">${repo.description || '설명 없음'}</p>
+                    <p class="repo-desc">${description}</p>
                     <div class="repo-footer">
                         ${repo.language ? `
                             <span class="language-badge">
@@ -2227,6 +2238,10 @@
             const langColor = languageColors[repo.language] || '#888';
             const health = calculateRepoHealth(repo);
             const isAIAnalyzed = !!repo.userData?.aiSummary;
+            const aiOneLiner = extractAIOneLiner(repo.userData?.aiSummary);
+            const description = aiOneLiner
+                ? `<span style="color:#4b5563; font-weight:600;">✨ ${aiOneLiner}</span>`
+                : (repo.description || '설명 없음');
 
             return `
                 <div class="repo-list-item" onclick="showDetail('${repo.id}')">
@@ -2237,7 +2252,7 @@
                             ${isAIAnalyzed ? `<span class="ai-status-badge">✨ AI Analyzed</span>` : ''}
                         </div>
                         <div class="repo-list-desc">
-                            ${repo.description || '설명 없음'}
+                            ${description}
                         </div>
                     </div>
                     <div class="repo-list-meta">
