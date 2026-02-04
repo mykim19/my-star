@@ -291,6 +291,63 @@
             border-color: #764ba2;
         }
 
+        /* Collections Bar (Polished) */
+        .collections-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #e0e0e0;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .collection-btn {
+            padding: 8px 16px;
+            border: 1px solid #e0e0e0;
+            background: #fff;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            color: #555;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .collection-btn:hover {
+            background: #f8f9fa;
+            border-color: #ccc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .collection-btn.active {
+            background: #fff8e1;
+            /* Amber-50 */
+            border-color: #ffc107;
+            color: #b45309;
+            /* Amber-700 */
+            font-weight: 600;
+            box-shadow: 0 0 0 1px #ffc107;
+        }
+
+        .collection-btn.add-coll {
+            border: 1px dashed #9ca3af;
+            color: #6b7280;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .collection-btn.add-coll:hover {
+            border-color: #4b5563;
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+
         /* Main Content */
         .main {
             max-width: 1200px;
@@ -2085,6 +2142,7 @@
                         <div class="repo-name">
                             ${repo.name}
                             ${getPurposeBadge(repo.userData?.purpose)}
+                            ${repo.userData?.aiSummary ? '<span class="ai-status-badge">✨ AI</span>' : ''}
                         </div>
                         <span class="repo-stars">⭐ ${formatNumber(repo.stargazers_count)}</span>
                     </div>
