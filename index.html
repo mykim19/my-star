@@ -788,25 +788,32 @@
             background: #f1f5f9;
         }
 
-        .d-btn.adopt.active {
+        .d-btn.use_now.active {
+            background: #dbeafe;
+            border-color: #60a5fa;
+            color: #1e40af;
+            box-shadow: 0 0 0 2px #bfdbfe;
+        }
+
+        .d-btn.integrate.active {
             background: #dcfce7;
-            border-color: #86efac;
+            border-color: #4ade80;
             color: #166534;
             box-shadow: 0 0 0 2px #bbf7d0;
         }
 
-        .d-btn.hold.active {
+        .d-btn.reference.active {
             background: #fef9c3;
-            border-color: #fde047;
+            border-color: #facc15;
             color: #854d0e;
             box-shadow: 0 0 0 2px #fef08a;
         }
 
-        .d-btn.avoid.active {
-            background: #fee2e2;
-            border-color: #fca5a5;
-            color: #991b1b;
-            box-shadow: 0 0 0 2px #fecaca;
+        .d-btn.archive.active {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+            color: #374151;
+            box-shadow: 0 0 0 2px #e5e7eb;
         }
 
         /* AI Recommendation Badge */
@@ -3180,6 +3187,14 @@
                     <!-- 3. Integration Recipe (Core) -->
                     <div class="v2-section">
                         <h4>🍳 Integration Recipe: ${card.recipe.context}</h4>
+                        
+                        ${(card.recipe.input || card.recipe.process || card.recipe.output) ? `
+                        <div style="display:flex; gap:12px; margin-bottom:12px; font-size:0.85rem; background:#f9fafb; padding:12px; border-radius:6px; flex-wrap:wrap; border:1px solid #e5e7eb;">
+                             ${card.recipe.input ? `<div style="flex:1; min-width:140px;"><strong>📥 Input</strong><br><span style="color:#4b5563;">${card.recipe.input}</span></div>` : ''}
+                             ${card.recipe.process ? `<div style="flex:1; min-width:140px; border-left:1px solid #e5e7eb; padding-left:12px;"><strong>⚙️ Process</strong><br><span style="color:#4b5563;">${card.recipe.process}</span></div>` : ''}
+                             ${card.recipe.output ? `<div style="flex:1; min-width:140px; border-left:1px solid #e5e7eb; padding-left:12px;"><strong>📤 Output</strong><br><span style="color:#4b5563;">${card.recipe.output}</span></div>` : ''}
+                        </div>` : ''}
+
                         <div class="v2-code-block">
                             <pre style="margin:0; white-space:pre-wrap;">${card.recipe.code_block}</pre>
                             <button class="v2-copy-btn" onclick="navigator.clipboard.writeText(\`${card.recipe.code_block.replace(/`/g, '\\`')}\`)">Copy Recipe</button>
@@ -3324,7 +3339,12 @@
             const userData = repo.userData || {};
             const purposeValue = userData.purpose || '';
             const noteValue = userData.note || '';
-            const decisionValue = userData.decision_snapshot || ''; // 'adopt', 'hold', 'avoid'
+            let decisionValue = userData.decision_snapshot || '';
+
+            // Migration Mapping
+            if (decisionValue === 'adopt') decisionValue = 'use_now';
+            if (decisionValue === 'hold') decisionValue = 'reference';
+            if (decisionValue === 'avoid') decisionValue = 'archive';
 
             // Check formatted AI data
             let aiContent = '';
@@ -3343,21 +3363,25 @@
 
             return `
                 <div class="user-data-section">
-                    <!-- Decision Snapshot (Top 3-Way Toggle) -->
+                    <!-- Implementation Snapshot (Action Buttons) -->
                     <div class="decision-toggle-group">
-                        <label class="decision-label">Decision Snapshot</label>
-                        <div class="toggle-container">
-                            <button class="d-btn adopt ${decisionValue === 'adopt' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'adopt')">✅ Adopt</button>
-                            <button class="d-btn hold ${decisionValue === 'hold' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'hold')">⏸ Hold</button>
-                            <button class="d-btn avoid ${decisionValue === 'avoid' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'avoid')">🚫 Avoid</button>
+                        <label class="decision-label" style="display:flex; justify-content:space-between; align-items:center;">
+                            <span>Implementation Snapshot</span>
+                            <span style="font-size:0.8rem; color:#6b7280; font-weight:normal;">What will you do?</span>
+                        </label>
+                        <div class="toggle-container implementation-actions">
+                            <button class="d-btn use_now ${decisionValue === 'use_now' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'use_now')" title="Deploy Immediately">🚀 Use Now</button>
+                            <button class="d-btn integrate ${decisionValue === 'integrate' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'integrate')" title="Plan Needed">🏗 Integrate</button>
+                            <button class="d-btn reference ${decisionValue === 'reference' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'reference')" title="Study Later">📚 Reference</button>
+                            <button class="d-btn archive ${decisionValue === 'archive' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'archive')" title="Not for me">📦 Archive</button>
                         </div>
                     </div>
 
                     <h3>My Data</h3>
                     <div class="form-group">
-                        <label>Purpose Tag</label>
+                        <label>Target Project</label>
                         <select id="repoPurpose" class="form-control">
-                            <option value="">Select Purpose (ex. To Try)...</option>
+                            <option value="">Where will you use this?</option>
                             <option value="reference" ${purposeValue === 'reference' ? 'selected' : ''}>📚 Reference (나중에 참고)</option>
                             <option value="to-try" ${purposeValue === 'to-try' ? 'selected' : ''}>🧪 To Try (써봐야 함)</option>
                             <option value="idea" ${purposeValue === 'idea' ? 'selected' : ''}>💡 Idea Source (영감 얻기)</option>
@@ -3479,8 +3503,11 @@
                     "success_criteria": "설치 성공 시 확인해야 할 출력 메시지 예시"
                   },
                   "recipe": {
-                    "context": "통합 레이어 (예: React Component, FastAPI Middleware, CLI)",
-                    "code_block": "복사해서 바로 실행 가능한 Minimal Working Example (주석 포함, import부터 시작)",
+                    "context": "통합 레이어 (예: React Component, FastAPI Middleware)",
+                    "input": "입력 데이터 (예: Claude Code Plan JSON)",
+                    "process": "핵심 로직 (예: Node/Edge 파싱 및 레이아웃)",
+                    "output": "최종 출력 (예: Interactive Mermaid Diagram)",
+                    "code_block": "복사해서 바로 실행 가능한 Minimal Working Example (import부터 시작)",
                     "steps": ["단계 1: 설치", "단계 2: 설정", "단계 3: 실행"]
                   },
                   "pitfalls": ["사용 시 주의해야 할 성능/보안/환경 제약사항 (3개 이내)"],
