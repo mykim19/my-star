@@ -3138,9 +3138,82 @@
         function renderRepoCardJSON(card) {
             if (!card) return '';
 
+            // --- Schema V2: Implementation Engine ---
+            if (card.recipe) {
+                return `
+                <div class="repo-card-v2">
+                    <!-- 1. Identity -->
+                    <div class="v2-header">
+                        <div class="v2-icon">${card.identity.icon || '⚡️'}</div>
+                        <div class="v2-title-area">
+                            <h3>${card.identity.name}</h3>
+                            <p class="v2-one-liner">${card.identity.desc_one_liner}</p>
+                            <div class="v2-tags">
+                                ${(card.identity.tags || []).map(t => `<span class="v2-tag">#${t}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Quick Start (Entrance) -->
+                    <div class="v2-section" style="border-left: 4px solid #10b981; background: #f0fdf4;">
+                        <h4 style="color:#059669;">⚡ Quick Start</h4>
+                        <div class="v2-code-block">
+                            <div style="margin-bottom:8px; color:#9ca3af; font-size:0.8rem;"># Install</div>
+                            <div style="margin-bottom:12px; font-weight:bold; color:#fff;">
+                                $ ${card.quick_start.install_cmd} 
+                                <button class="v2-copy-btn" onclick="navigator.clipboard.writeText('${card.quick_start.install_cmd}')">Copy</button>
+                            </div>
+                            
+                            ${card.quick_start.usage_cmd ? `
+                            <div style="border-top:1px solid #374151; margin:8px 0; padding-top:8px;">
+                                <div style="color:#9ca3af; font-size:0.8rem;"># Verify</div>
+                                <div>$ ${card.quick_start.usage_cmd}</div>
+                            </div>` : ''}
+                            
+                            ${card.quick_start.success_criteria ? `
+                            <div style="margin-top:8px; font-size:0.85rem; color:#86efac;">
+                                ✔ Expect: "${card.quick_start.success_criteria}"
+                            </div>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- 3. Integration Recipe (Core) -->
+                    <div class="v2-section">
+                        <h4>🍳 Integration Recipe: ${card.recipe.context}</h4>
+                        <div class="v2-code-block">
+                            <pre style="margin:0; white-space:pre-wrap;">${card.recipe.code_block}</pre>
+                            <button class="v2-copy-btn" onclick="navigator.clipboard.writeText(\`${card.recipe.code_block.replace(/`/g, '\\`')}\`)">Copy Recipe</button>
+                        </div>
+                        <ol style="margin-top:12px; padding-left:20px; color:#4b5563; font-size:0.9rem;">
+                            ${(card.recipe.steps || []).map(s => `<li>${s}</li>`).join('')}
+                        </ol>
+                    </div>
+
+                    <!-- 4. Reality Check (Pitfalls) -->
+                    <div class="v2-section" style="background:#fff1f2; border:1px solid #fecaca;">
+                        <h4 style="color:#b91c1c;">⚠️ Reality Check (Pitfalls)</h4>
+                        <ul style="color:#991b1b;">
+                            ${(card.pitfalls || []).map(p => `<li>${p}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    <!-- 5. Outcome -->
+                    <div class="v2-section">
+                        <h4>🎁 What You Get</h4>
+                        <p style="color:#374151; font-size:0.95rem;">${card.what_you_get}</p>
+                    </div>
+
+                    <!-- Meta -->
+                    <div class="v2-meta">
+                        <span>Confidence: <span class="badge-${card.ai_meta.confidence}">${card.ai_meta.confidence}</span></span>
+                        <span>Archited by AI on ${new Date(card.ai_meta.generated_at).toLocaleDateString()}</span>
+                    </div>
+                </div>`;
+            }
+
+            // --- Schema V1: Legacy Fallback ---
             return `
                 <div class="repo-card-v2">
-                    <!-- 1. Header & Identity -->
                     <div class="v2-header">
                         <div class="v2-icon">${card.identity.icon || '📦'}</div>
                         <div class="v2-title-area">
@@ -3152,7 +3225,7 @@
                         </div>
                     </div>
 
-                    <!-- 2. Core Value (Why) -->
+                    ${card.why ? `
                     <div class="v2-section v2-why">
                         <h4>🚀 Why use this?</h4>
                         <ul>
@@ -3160,10 +3233,9 @@
                             <li><strong>Problem:</strong> ${card.why.problem_solved}</li>
                             <li><strong>Benefit:</strong> ${card.why.core_benefit}</li>
                         </ul>
-                    </div>
+                    </div>` : ''}
 
-                    <!-- 4. Quick Start (Consolidated) -->
-                    ${(card.quick_start.install_cmd || card.quick_start.example_code) ? `
+                    ${(card.quick_start && (card.quick_start.install_cmd || card.quick_start.example_code)) ? `
                     <div class="v2-section">
                         <h4>⚡ Quick Start</h4>
                         <div class="v2-code-block">
@@ -3178,7 +3250,8 @@
                         </div>
                     </div>
                     ` : ''}
-                    <!-- 4. Decision Matrix -->
+
+                    ${card.usage ? `
                     <div class="v2-grid-section">
                         <div class="v2-col success">
                             <h4>✅ When to use</h4>
@@ -3188,15 +3261,13 @@
                             <h4>🚫 Valid alternatives if...</h4>
                             <ul>${(card.usage.when_not_to_use || []).map(i => `<li>${i}</li>`).join('')}</ul>
                         </div>
-                    </div>
+                    </div>` : ''}
 
-                    <!-- Meta -->
                     <div class="v2-meta">
                         <span>Confidence: <span class="badge-${card.ai_meta.confidence}">${card.ai_meta.confidence}</span></span>
                         <span>Generated: ${new Date(card.ai_meta.generated_at).toLocaleDateString()}</span>
                     </div>
-                    
-                    <!-- 5. AI Recommendation (Staff Opinion) -->
+
                     ${card.ai_recommendation ? `
                     <div class="v2-recommendation ${card.ai_recommendation.verdict}">
                         <div class="rec-icon">
@@ -3382,10 +3453,10 @@
 
             try {
                 // 3. Prepare Prompt (Refined)
-                // 3. Prepare Prompt (v3: Chief Tech Advisor)
+                // 3. Prepare Prompt (v4: Implementation Architect)
                 const prompt = `
-                당신은 냉철한 Chief Tech Advisor입니다. 단순히 정보를 요약하지 말고, 엔지니어링 리더에게 "이 기술을 지금 도입할지"에 대한 명확한 조언(Verdict)을 주십시오.
-                가장 중요한 것은 'ai_recommendation' 필드입니다. 솔직하고 비판적으로 평가하세요.
+                당신은 "Senior Integration Architect"입니다. 이 라이브러리를 내 프로젝트에 **2분 안에 통합(Integration)**하려면 어떻게 해야 하는지 "실행 레시피"를 작성하십시오.
+                평가나 리뷰는 필요 없습니다. 오직 **실행 가능한 코드**와 **통합 가이드**에 집중하십시오.
                 반드시 **JSON 포맷**으로만 응답해야 합니다.
 
                 [분석 대상]
@@ -3398,32 +3469,22 @@
                 {
                   "identity": {
                     "name": "패키지명 (대소문자 정확히)",
-                    "desc_one_liner": "이 라이브러리의 핵심 가치와 해결하는 문제를 한국어로 한 줄 요약 (명사형 종결)",
-                    "tags": ["핵심키워드1", "핵심키워드2", "핵심키워드3"],
-                    "icon": "관련 이모지 1개"
-                  },
-                  "why": {
-                    "target_persona": "주요 타겟 독자 (예: 복잡한 차트가 필요한 데이터 과학자)",
-                    "problem_solved": "이 도구가 해결하는 구체적인 Pain Point",
-                    "core_benefit": "사용함으로써 얻는 이점"
+                    "desc_one_liner": "이 도구의 핵심 기능과 가치를 한국어로 한 줄 정의 (명사형 종결)",
+                    "tags": ["핵심키워드1", "핵심키워드2"],
+                    "icon": "관련 이모지 1개 (예: ⚡️)"
                   },
                   "quick_start": {
-                    "install_cmd": "설치 명령어 (npm 표준 준수, 소문자 패키지명)",
-                    "run_cmd": "최소 실행 명령어 또는 예시",
-                    "example_code": "가장 핵심적인 Hello World 코드 스니펫 (3-5줄 내외)"
+                    "install_cmd": "설치 명령어 (예: npm install package)",
+                    "usage_cmd": "검증용 실행 명령어 (Optional)",
+                    "success_criteria": "설치 성공 시 확인해야 할 출력 메시지 예시"
                   },
-                  "usage": {
-                     "when_to_use": ["구체적 상황 1", "구체적 상황 2", "구체적 상황 3"],
-                     "when_not_to_use": ["사용하면 안 되는 경우", "기술적 제약 사항", "대안이 더 나은 경우"]
+                  "recipe": {
+                    "context": "통합 레이어 (예: React Component, FastAPI Middleware, CLI)",
+                    "code_block": "복사해서 바로 실행 가능한 Minimal Working Example (주석 포함, import부터 시작)",
+                    "steps": ["단계 1: 설치", "단계 2: 설정", "단계 3: 실행"]
                   },
-                  "outputs": {
-                    "type": "결과물 형태 (UI, JSON, Log, etc)",
-                    "description": "실행 시 기대되는 결과 묘사"
-                  },
-                  "ai_recommendation": {
-                    "verdict": "adopt" | "hold" | "avoid",
-                    "reason": "Advisor로서의 직설적 조언 (예: '관리 상태가 좋지 않으니 대안인 X를 추천')"
-                  },
+                  "pitfalls": ["사용 시 주의해야 할 성능/보안/환경 제약사항 (3개 이내)"],
+                  "what_you_get": "이걸 적용하면 내 서비스에 생기는 구체적 결과물 (예: 인터랙티브 그래프 컴포넌트)",
                   "ai_meta": {
                      "confidence": "high" | "medium" | "low",
                      "generated_at": "${new Date().toISOString()}"
@@ -3431,9 +3492,9 @@
                 }
 
                 [작성 원칙]
-                1. 한국어로 작성하되, 기술 용어는 영어 원문을 병기하거나 그대로 사용함.
-                2. 'desc_one_liner'는 **가장 중요함**. 사용자가 목록에서 이것만 보고 클릭할지 결정함.
-                3. JSON 형식을 엄격히 준수할 것 (Markdown Block 없이 순수 JSON 권장하나, Block 있어도 무방).
+                1. 한국어로 작성하되, 코드는 원문 유지.
+                2. 'recipe.code_block'은 실제 실행 가능해야 함.
+                3. 'pitfalls'는 치명적인 제약사항 위주로 작성.
                 `;
 
                 // 4. Update Status Text
@@ -3496,21 +3557,21 @@
 
                 // Add Footer
                 contentDiv.innerHTML += `
-                    <div style="margin-top:15px; padding-top:10px; border-top:1px dashed #e5e7eb; display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:#6b7280;">
+                < div style = "margin-top:15px; padding-top:10px; border-top:1px dashed #e5e7eb; display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:#6b7280;" >
                         <span>⚠️ AI 분석 결과는 추정치이며 정확하지 않을 수 있습니다.</span>
                         <span style="background:#f3f4f6; padding:2px 8px; border-radius:12px;">
                             Generated by ${provider === 'deepseek' ? 'DeepSeek 🐋' : 'Gemini ✨'}
                         </span>
-                    </div>
+                    </div >
                 `;
 
                 // Refresh badge
-                document.getElementById(`aiHeader-${repoId}`).innerHTML = `
-                    <div class="ai-title">✨ AI Insight · Tech Decision Card</div>
+                document.getElementById(`aiHeader - ${repoId} `).innerHTML = `
+                < div class="ai-title" >✨ AI Insight · Tech Decision Card</div >
                     <div style="display:flex; align-items:center; gap:8px;">
                         <button class="ai-btn" onclick="generateAISummary('${repo.id}')" id="aiBtn-${repo.id}">🔄 Re-Analyze</button>
                     </div>
-                `;
+            `;
 
             } catch (error) {
                 console.error(error);
@@ -3518,7 +3579,7 @@
                 if (error.message.includes("401")) errorMsg = "API Key가 올바르지 않습니다.";
                 if (error.message.includes("429")) errorMsg = "API 요청 한도를 초과했습니다.";
 
-                contentDiv.innerHTML = `<div class="error-msg" style="display:block;">${errorMsg}<br><small>${error.message}</small></div>`;
+                contentDiv.innerHTML = `< div class="error-msg" style = "display:block;" > ${errorMsg} <br><small>${error.message}</small></div>`;
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalBtnText;
