@@ -741,6 +741,114 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
+        /* Decision Toggle */
+        .decision-toggle-group {
+            margin-bottom: 24px;
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .decision-label {
+            display: block;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .toggle-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .d-btn {
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #475569;
+            transition: all 0.2s;
+            flex: 1;
+        }
+
+        .d-btn:hover {
+            background: #f1f5f9;
+        }
+
+        .d-btn.adopt.active {
+            background: #dcfce7;
+            border-color: #86efac;
+            color: #166534;
+            box-shadow: 0 0 0 2px #bbf7d0;
+        }
+
+        .d-btn.hold.active {
+            background: #fef9c3;
+            border-color: #fde047;
+            color: #854d0e;
+            box-shadow: 0 0 0 2px #fef08a;
+        }
+
+        .d-btn.avoid.active {
+            background: #fee2e2;
+            border-color: #fca5a5;
+            color: #991b1b;
+            box-shadow: 0 0 0 2px #fecaca;
+        }
+
+        /* AI Recommendation Badge */
+        .v2-recommendation {
+            margin-top: 24px;
+            padding: 16px;
+            border-radius: 8px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .v2-recommendation.adopt {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+        }
+
+        .v2-recommendation.hold {
+            background: #fefce8;
+            border: 1px solid #fef08a;
+        }
+
+        .v2-recommendation.avoid {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+        }
+
+        .rec-icon {
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
+        .rec-content strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.9rem;
+        }
+
+        .rec-content p {
+            margin: 0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #334155;
+        }
+
         .v2-grid-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -2398,6 +2506,33 @@
             return labels[purpose] ? `<span class="purpose-tag">${labels[purpose]}</span>` : '';
         }
 
+        // Save Decision Snapshot
+        window.saveDecision = function (repoId, decision) {
+            // Update Data
+            StorageManager.updateRepoData(repoId, { decision_snapshot: decision });
+
+            // Update Local State
+            const repo = allRepos.find(r => r.id == repoId);
+            if (repo) {
+                if (!repo.userData) repo.userData = {};
+                repo.userData.decision_snapshot = decision;
+            }
+
+            // Update UI (Active Class)
+            const btns = document.querySelectorAll('.d-btn');
+            btns.forEach(btn => btn.classList.remove('active'));
+
+            // Find specific button in the current modal to activate
+            // Identify by onclick attribute or event target if passed, but simpler to relying on re-render or class lookup
+            // Since we use onclick="saveDecision...", we can just re-render or toggle classes.
+            // But to be robust given multiple potential buttons (if list view had them):
+            const container = document.querySelector('.toggle-container');
+            if (container) {
+                const targetBtn = container.querySelector(`.${decision}`);
+                if (targetBtn) targetBtn.classList.add('active');
+            }
+        };
+
         // Save Repo Data
         window.saveRepoData = function (repoId) {
             const purpose = document.getElementById('repoPurpose').value;
@@ -3028,6 +3163,19 @@
                         <span>Confidence: <span class="badge-${card.ai_meta.confidence}">${card.ai_meta.confidence}</span></span>
                         <span>Generated: ${new Date(card.ai_meta.generated_at).toLocaleDateString()}</span>
                     </div>
+                    
+                    <!-- 5. AI Recommendation (Staff Opinion) -->
+                    ${card.ai_recommendation ? `
+                    <div class="v2-recommendation ${card.ai_recommendation.verdict}">
+                        <div class="rec-icon">
+                            ${card.ai_recommendation.verdict === 'adopt' ? '🛡️' : card.ai_recommendation.verdict === 'hold' ? '🚧' : '🛑'}
+                        </div>
+                        <div class="rec-content">
+                            <strong>AI Staff Recommendation: <span style="text-transform:uppercase">${card.ai_recommendation.verdict}</span></strong>
+                            <p>${card.ai_recommendation.reason}</p>
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
             `;
         }
@@ -3073,6 +3221,7 @@
             const userData = repo.userData || {};
             const purposeValue = userData.purpose || '';
             const noteValue = userData.note || '';
+            const decisionValue = userData.decision_snapshot || ''; // 'adopt', 'hold', 'avoid'
 
             // Check formatted AI data
             let aiContent = '';
@@ -3091,11 +3240,21 @@
 
             return `
                 <div class="user-data-section">
+                    <!-- Decision Snapshot (Top 3-Way Toggle) -->
+                    <div class="decision-toggle-group">
+                        <label class="decision-label">Decision Snapshot</label>
+                        <div class="toggle-container">
+                            <button class="d-btn adopt ${decisionValue === 'adopt' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'adopt')">✅ Adopt</button>
+                            <button class="d-btn hold ${decisionValue === 'hold' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'hold')">⏸ Hold</button>
+                            <button class="d-btn avoid ${decisionValue === 'avoid' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'avoid')">🚫 Avoid</button>
+                        </div>
+                    </div>
+
                     <h3>My Data</h3>
                     <div class="form-group">
                         <label>Purpose Tag</label>
                         <select id="repoPurpose" class="form-control">
-                            <option value="">Select Purpose...</option>
+                            <option value="">Select Purpose (ex. To Try)...</option>
                             <option value="reference" ${purposeValue === 'reference' ? 'selected' : ''}>📚 Reference (나중에 참고)</option>
                             <option value="to-try" ${purposeValue === 'to-try' ? 'selected' : ''}>🧪 To Try (써봐야 함)</option>
                             <option value="idea" ${purposeValue === 'idea' ? 'selected' : ''}>💡 Idea Source (영감 얻기)</option>
@@ -3106,7 +3265,7 @@
                     
                     <div class="form-group">
                         <label>One-line Note</label>
-                        <input type="text" id="repoNote" class="form-control" value="${noteValue}" placeholder="Add a short note...">
+                        <input type="text" id="repoNote" class="form-control" value="${noteValue}" placeholder="왜 이 레포를 저장했나요? (예: 다음 프로젝트 차트 라이브러리 후보)">
                     </div>
 
                     <div style="text-align:right; margin-bottom: 20px;">
@@ -3191,9 +3350,10 @@
 
             try {
                 // 3. Prepare Prompt (Refined)
-                // 3. Prepare Prompt (v2.1: JSON Schema)
+                // 3. Prepare Prompt (v3: Chief Tech Advisor)
                 const prompt = `
-                당신은 시니어 소프트웨어 아키텍트입니다. 분석 대상 레포지토리를 보고, 엔지니어링 의사결정을 위한 "Structured Tech Card"를 작성하세요.
+                당신은 냉철한 Chief Tech Advisor입니다. 단순히 정보를 요약하지 말고, 엔지니어링 리더에게 "이 기술을 지금 도입할지"에 대한 명확한 조언(Verdict)을 주십시오.
+                가장 중요한 것은 'ai_recommendation' 필드입니다. 솔직하고 비판적으로 평가하세요.
                 반드시 **JSON 포맷**으로만 응답해야 합니다.
 
                 [분석 대상]
@@ -3227,6 +3387,10 @@
                   "outputs": {
                     "type": "결과물 형태 (UI, JSON, Log, etc)",
                     "description": "실행 시 기대되는 결과 묘사"
+                  },
+                  "ai_recommendation": {
+                    "verdict": "adopt" | "hold" | "avoid",
+                    "reason": "Advisor로서의 직설적 조언 (예: '관리 상태가 좋지 않으니 대안인 X를 추천')"
                   },
                   "ai_meta": {
                      "confidence": "high" | "medium" | "low",
