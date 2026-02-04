@@ -597,9 +597,156 @@
             color: #db2777;
             border-radius: 4px;
             font-weight: 600;
-            display: flex;
             align-items: center;
             gap: 4px;
+        }
+
+        /* --- v2 AI Tech Card Styles --- */
+        .repo-card-v2 {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: #1f2937;
+        }
+
+        .v2-header {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            align-items: flex-start;
+        }
+
+        .v2-icon {
+            font-size: 2rem;
+            background: #f3f4f6;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+
+        .v2-title-area h3 {
+            margin: 0 0 4px 0;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .v2-one-liner {
+            margin: 0 0 8px 0;
+            font-size: 0.95rem;
+            color: #4b5563;
+            line-height: 1.4;
+        }
+
+        .v2-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .v2-tag {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            background: #e5e7eb;
+            color: #374151;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .v2-section {
+            margin-bottom: 24px;
+            background: #fff;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+
+        .v2-section h4 {
+            margin: 0 0 12px 0;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            font-weight: 600;
+        }
+
+        .v2-section ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #374151;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .v2-why {
+            background: #f9fafb;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .v2-code-block {
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            position: relative;
+            overflow-x: auto;
+        }
+
+        .v2-copy-btn {
+            position: absolute;
+            right: 8px;
+            top: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .v2-copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .v2-grid-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .v2-col {
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .v2-col.success {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+        }
+
+        .v2-col.danger {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+        }
+
+        .v2-col h4 {
+            margin: 0 0 8px 0;
+            font-size: 0.85rem;
+        }
+
+        .v2-meta {
+            text-align: right;
+            font-size: 0.75rem;
+            color: #9ca3af;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
         }
 
         .load-more-btn {
@@ -2111,31 +2258,34 @@
             return cases[category] || cases['Others'];
         }
 
-        // Extract AI One-Liner (Ultra Robust)
-        function extractAIOneLiner(markdown) {
-            if (!markdown) return null;
+        // Extract AI One-Liner (Hybrid: JSON + Markdown Fallback)
+        function extractAIOneLiner(data) {
+            if (!data) return null;
 
-            // Strategy 1: Explicit keyword search (handling bolding, spaces, colons)
-            // Example: "- **한 줄 정의**: ..." or "한 줄 요약 : ..."
-            const keyMatch = markdown.match(/[\-\*]?\s*(?:\*\*)?\s*(?:한\s*줄\s*정의|한\s*줄\s*요약|핵심\s*가치)\s*(?:\*\*)?.*?[:：]\s*(.*)$/m);
-            if (keyMatch && keyMatch[1]) {
-                return keyMatch[1].replace(/\*\*/g, '').trim();
+            // 1. JSON Schema Support (Phase 2)
+            if (typeof data === 'object' && data.identity?.desc_one_liner) {
+                return data.identity.desc_one_liner;
             }
 
-            // Strategy 2: First bullet point under "Who & Why" section (Section Context)
-            // Finds "## ... Who & Why" and captures the immediate next bullet
+            // 2. Legacy Markdown Support
+            const markdown = typeof data === 'string' ? data : '';
+            if (!markdown) return null;
+
+            // Strategy 1: Explicit keyword
+            const keyMatch = markdown.match(/[\-\*]?\s*(?:\*\*)?\s*(?:한\s*줄\s*정의|한\s*줄\s*요약|핵심\s*가치)\s*(?:\*\*)?.*?[:：]\s*(.*)$/m);
+            if (keyMatch && keyMatch[1]) return keyMatch[1].replace(/\*\*/g, '').trim();
+
+            // Strategy 2: First bullet under Section
             const sectionMatch = markdown.match(/##\s*🚀?\s*.*?(?:Who\s*&\s*Why|핵심\s*가치).*?[\r\n]+\s*[\-\*]\s*(.*)$/m);
             if (sectionMatch && sectionMatch[1]) {
-                // Remove potential redundant label like "**한 줄 정의**: " inside the bullet
                 return sectionMatch[1].replace(/^(?:\*\*)?(?:한\s*줄\s*정의|한\s*줄\s*요약).*?[:：]\s*/, '').replace(/\*\*/g, '').trim();
             }
 
-            // Strategy 3: Any line starting with "한 줄 정의" regardless of section
+            // Strategy 3: Loose match
             const looseMatch = markdown.match(/한\s*줄\s*정의.*?[:：]\s*(.*)/);
             if (looseMatch && looseMatch[1]) return looseMatch[1].replace(/\*\*/g, '').trim();
 
-            // Strategy 4 (Final Fallback): Content under "Who & Why" or "Summary" WITHOUT bullet (Legacy/Loose format)
-            // Just grabs the first meaningful line after the header
+            // Strategy 4: Fallback body text
             const bodyMatch = markdown.match(/##\s*.*?(?:Who\s*&\s*Why|핵심\s*가치|요약|개요).*?[\r\n]+([^\r\n#\-*]+)/);
             if (bodyMatch && bodyMatch[1]) return bodyMatch[1].trim();
 
@@ -2757,6 +2907,164 @@
             return `<div class="markdown-prose">${html}</div>`;
         }
 
+        // Safe JSON Parser (with Markdown stripper)
+        function safelyParseJSON(text) {
+            try {
+                // 1. Try direct parse
+                return JSON.parse(text);
+            } catch (e) {
+                // 2. Try stripping markdown code blocks
+                const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+                if (jsonMatch && jsonMatch[1]) {
+                    try {
+                        return JSON.parse(jsonMatch[1]);
+                    } catch (e2) {
+                        return null; // Failed
+                    }
+                }
+                return null; // Not JSON
+            }
+        }
+
+        // Render v2 Repo Card (JSON Schema)
+        function renderRepoCardJSON(card) {
+            if (!card) return '';
+
+            return `
+                <div class="repo-card-v2">
+                    <!-- 1. Header & Identity -->
+                    <div class="v2-header">
+                        <div class="v2-icon">${card.identity.icon || '📦'}</div>
+                        <div class="v2-title-area">
+                            <h3>${card.identity.name}</h3>
+                            <p class="v2-one-liner">${card.identity.desc_one_liner}</p>
+                            <div class="v2-tags">
+                                ${(card.identity.tags || []).map(t => `<span class="v2-tag">#${t}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Core Value (Why) -->
+                    <div class="v2-section v2-why">
+                        <h4>🚀 Why use this?</h4>
+                        <ul>
+                            <li><strong>Target:</strong> ${card.why.target_persona}</li>
+                            <li><strong>Problem:</strong> ${card.why.problem_solved}</li>
+                            <li><strong>Benefit:</strong> ${card.why.core_benefit}</li>
+                        </ul>
+                    </div>
+
+                    <!-- 3. Actionable Quick Start -->
+                    <div class="v2-section v2-start">
+                        <h4>⚡ Quick Start</h4>
+                        <div class="v2-code-block">
+                            <span class="v2-cmd">$ ${card.quick_start.install_cmd}</span>
+                            <button class="v2-copy-btn" onclick="navigator.clipboard.writeText('${card.quick_start.install_cmd}')">Copy</button>
+                        </div>
+                        <div class="v2-code-block" style="margin-top:8px;">
+                            <pre><code>${card.quick_start.example_code}</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- 4. Decision Matrix -->
+                    <div class="v2-grid-section">
+                        <div class="v2-col success">
+                            <h4>✅ When to use</h4>
+                            <ul>${(card.usage.when_to_use || []).map(i => `<li>${i}</li>`).join('')}</ul>
+                        </div>
+                        <div class="v2-col danger">
+                            <h4>🚫 Valid alternatives if...</h4>
+                            <ul>${(card.usage.when_not_to_use || []).map(i => `<li>${i}</li>`).join('')}</ul>
+                        </div>
+                    </div>
+
+                    <!-- Meta -->
+                    <div class="v2-meta">
+                        <span>Confidence: <span class="badge-${card.ai_meta.confidence}">${card.ai_meta.confidence}</span></span>
+                        <span>Generated: ${new Date(card.ai_meta.generated_at).toLocaleDateString()}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render User Data Section (Hybrid)
+        function renderUserDataSection(repo) {
+            const userData = repo.userData || {};
+            const purposeValue = userData.purpose || '';
+            const noteValue = userData.note || '';
+
+            // Check formatted AI data
+            let aiContent = '';
+            const aiData = userData.aiSummary;
+
+            if (aiData) {
+                // Determine format
+                if (typeof aiData === 'object' && aiData.identity) {
+                    // v2 JSON Format
+                    aiContent = renderRepoCardJSON(aiData);
+                } else if (typeof aiData === 'string') {
+                    // Legacy Markdown Format
+                    aiContent = renderMarkdown(aiData);
+                }
+            }
+
+            return `
+                <div class="user-data-section">
+                    <h3>My Data</h3>
+                    <div class="form-group">
+                        <label>Purpose Tag</label>
+                        <select id="repoPurpose" class="form-control">
+                            <option value="">Select Purpose...</option>
+                            <option value="reference" ${purposeValue === 'reference' ? 'selected' : ''}>📚 Reference (나중에 참고)</option>
+                            <option value="to-try" ${purposeValue === 'to-try' ? 'selected' : ''}>🧪 To Try (써봐야 함)</option>
+                            <option value="idea" ${purposeValue === 'idea' ? 'selected' : ''}>💡 Idea Source (영감 얻기)</option>
+                            <option value="alternative" ${purposeValue === 'alternative' ? 'selected' : ''}>🔄 Alternative (대안 기술)</option>
+                            <option value="using" ${purposeValue === 'using' ? 'selected' : ''}>🛠 Using (사용 중)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>One-line Note</label>
+                        <input type="text" id="repoNote" class="form-control" value="${noteValue}" placeholder="Add a short note...">
+                    </div>
+
+                    <div style="text-align:right; margin-bottom: 20px;">
+                        <button class="btn btn-primary" onclick="saveRepoData('${repo.id}')">Save Status</button>
+                    </div>
+
+                    <!-- Collections UI -->
+                    <div class="collections-ui-block" style="border-top: 1px solid #eee; padding-top: 20px; margin-bottom: 20px;">
+                         <h4>📁 Collections</h4>
+                         <div id="repoCollectionList" style="margin-bottom:10px;">
+                            ${renderRepoCollections(repo.id)}
+                         </div>
+                         <div style="display:flex; gap:10px;">
+                             <select id="collectionSelect" class="form-control">
+                                 <option value="">Select Collection...</option>
+                                 ${collections.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                             </select>
+                             <button class="btn btn-secondary" onclick="addToCollectionFromModal('${repo.id}')">Add</button>
+                         </div>
+                    </div>
+
+                    <!-- AI Section -->
+                    <div class="ai-section" id="aiHeader-${repo.id}">
+                        ${aiData ? `
+                            <div class="ai-title">✨ AI Insight · Tech Decision Card</div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <button class="ai-btn" onclick="generateAISummary('${repo.id}')" id="aiBtn-${repo.id}">🔄 Re-Analyze</button>
+                            </div>
+                        ` : `
+                            <button class="ai-btn" onclick="generateAISummary('${repo.id}')" id="aiBtn-${repo.id}">✨ Analyze with AI</button>
+                        `}
+                    </div>
+                    <div id="aiContent-${repo.id}" class="ai-content">
+                        ${aiContent}
+                    </div>
+                </div>
+            `;
+        }
+
         // Copy Code Utility
         window.copyCode = function (btn) {
             const code = btn.parentElement.nextElementSibling.innerText;
@@ -2802,10 +3110,10 @@
 
             try {
                 // 3. Prepare Prompt (Refined)
-                // 3. Prepare Prompt (v2: Senior Architect & Tech Decision Card)
+                // 3. Prepare Prompt (v2.1: JSON Schema)
                 const prompt = `
-                당신은 시니어 소프트웨어 아키텍트이자 테크니컬 라이터입니다.
-                아래 GitHub 레포지토리를 분석하여, 엔지니어링 팀이 이 기술 도입을 결정할 수 있는 "Tech Decision Card"를 작성해주세요.
+                당신은 시니어 소프트웨어 아키텍트입니다. 분석 대상 레포지토리를 보고, 엔지니어링 의사결정을 위한 "Structured Tech Card"를 작성하세요.
+                반드시 **JSON 포맷**으로만 응답해야 합니다.
 
                 [분석 대상]
                 Repository: ${repo.name}
@@ -2813,45 +3121,42 @@
                 Language: ${repo.language || 'N/A'}
                 Topics: ${(repo.topics || []).join(', ')}
 
+                [JSON Schema Definition]
+                {
+                  "identity": {
+                    "name": "패키지명 (대소문자 정확히)",
+                    "desc_one_liner": "이 라이브러리의 핵심 가치와 해결하는 문제를 한국어로 한 줄 요약 (명사형 종결)",
+                    "tags": ["핵심키워드1", "핵심키워드2", "핵심키워드3"],
+                    "icon": "관련 이모지 1개"
+                  },
+                  "why": {
+                    "target_persona": "주요 타겟 독자 (예: 복잡한 차트가 필요한 데이터 과학자)",
+                    "problem_solved": "이 도구가 해결하는 구체적인 Pain Point",
+                    "core_benefit": "사용함으로써 얻는 이점"
+                  },
+                  "quick_start": {
+                    "install_cmd": "설치 명령어 (npm 표준 준수, 소문자 패키지명)",
+                    "run_cmd": "최소 실행 명령어 또는 예시",
+                    "example_code": "가장 핵심적인 Hello World 코드 스니펫 (3-5줄 내외)"
+                  },
+                  "usage": {
+                     "when_to_use": ["구체적 상황 1", "구체적 상황 2", "구체적 상황 3"],
+                     "when_not_to_use": ["사용하면 안 되는 경우", "기술적 제약 사항", "대안이 더 나은 경우"]
+                  },
+                  "outputs": {
+                    "type": "결과물 형태 (UI, JSON, Log, etc)",
+                    "description": "실행 시 기대되는 결과 묘사"
+                  },
+                  "ai_meta": {
+                     "confidence": "high" | "medium" | "low",
+                     "generated_at": "${new Date().toISOString()}"
+                  }
+                }
+
                 [작성 원칙]
-                1. 톤앤매너: 객관적, 분석적, 군더더기 없음 (No "습니다/합니다" polite fillers -> "함/음" 명사형 종결)
-                2. 대상 독자: 시니어 개발자, 테크 리드 (초보자용 튜토리얼 아님)
-                3. 핵심 가치: 단순 "기능 나열"이 아니라 "해결하는 문제"와 "설계 철학"에 집중
-                4. 패키지명: 설치 명령어는 반드시 소문자 npm 표준 준수 (예: PaperBanana -> paperbanana)
-
-                [출력 포맷 (Markdown)]
-
-                ## 🚀 핵심 가치 (Who & Why)
-                - **한 줄 정의**: 이 라이브러리가 해결하는 'Pain Point'를 한 문장으로 정의
-                - **주요 타겟**: 누가, 언제 써야 하는지 (예: "복잡한 설정 없이 즉시 시각화가 필요한 연구자")
-
-                ## 🛠 3단계 빠른 시작 (Quick Start)
-                **STEP 1. 5분 체험 (Trial)**
-                (설치 없이 즉시 실행 가능한 npx one-liner 또는 최소 실행 코드)
-                \`\`\`bash
-                (코드)
-                \`\`\`
-
-                **STEP 2. 실전 설정 (Full Setup)**
-                (프로젝트 통합 시 필요한 설치 및 핵심 설정. API Key나 환경변수는 '필수'와 '선택'으로 구분하여 명시)
-
-                ## 📄 예상 결과물 (Output)
-                - 이 도구가 생성하는 결과물의 형태(JSON, UI, Log, Image 등)를 구체적으로 묘사
-                - (가능하다면) 입력 -> 처리 -> 출력 데이터의 흐름 요약
-
-                ## 💡 추천 활용 시나리오 (Use Case)
-                - 이 라이브러리의 아키텍처적 장점이 극대화되는 구체적 상황 3가지
-                - (범용적인 "AI 개발" 같은 모호한 표현 금지. "RAG 파이프라인의 청킹 모듈로 활용" 같이 구체적으로)
-
-                ## 🚫 적합하지 않은 경우 (Limitations)
-                - **매우 중요 (신뢰도 핵심)**: 이 도구를 쓰면 안 되는 상황, 기술적 제약, 혹은 더 나은 대안이 존재하는 경우를 솔직하게 명시
-
-                ## 🔄 대안 비교 (Alternatives)
-                - **경쟁 기술**: (예: LangChain vs 이 라이브러리)
-                - **선택 기준**: "A 상황이면 LangChain, B 상황이면 이 라이브러리" 형태의 의사결정 기준 제시
-
-                ## 🎓 아키텍처 학습 포인트 (Research)
-                - 이 코드베이스를 뜯어봄으로써 배울 수 있는 고급 설계 패턴이나 기술적 개념 1가지 (예: "Visitor 패턴을 활용한 AST 순회 최적화")
+                1. 한국어로 작성하되, 기술 용어는 영어 원문을 병기하거나 그대로 사용함.
+                2. 'desc_one_liner'는 **가장 중요함**. 사용자가 목록에서 이것만 보고 클릭할지 결정함.
+                3. JSON 형식을 엄격히 준수할 것 (Markdown Block 없이 순수 JSON 권장하나, Block 있어도 무방).
                 `;
 
                 // 4. Update Status Text
@@ -2878,11 +3183,24 @@
 
                 // 6. Save & Render
                 repo.userData = repo.userData || {};
-                repo.userData.aiSummary = result;
-                repo.userData.aiProvider = provider; // Save Provider
-                StorageManager.updateRepoData(repoId, { aiSummary: result, aiProvider: provider });
 
-                contentDiv.innerHTML = renderMarkdown(result) + `
+                // Parse JSON if possible
+                const jsonResult = safelyParseJSON(result);
+                const finalData = jsonResult || result; // Fallback to raw text if parse fails
+
+                repo.userData.aiSummary = finalData;
+                repo.userData.aiProvider = provider;
+                StorageManager.updateRepoData(repoId, { aiSummary: finalData, aiProvider: provider });
+
+                // Render Content
+                if (typeof finalData === 'object') {
+                    contentDiv.innerHTML = renderRepoCardJSON(finalData);
+                } else {
+                    contentDiv.innerHTML = renderMarkdown(finalData);
+                }
+
+                // Add Footer
+                contentDiv.innerHTML += `
                     <div style="margin-top:15px; padding-top:10px; border-top:1px dashed #e5e7eb; display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:#6b7280;">
                         <span>⚠️ AI 분석 결과는 추정치이며 정확하지 않을 수 있습니다.</span>
                         <span style="background:#f3f4f6; padding:2px 8px; border-radius:12px;">
@@ -2893,9 +3211,9 @@
 
                 // Refresh badge
                 document.getElementById(`aiHeader-${repoId}`).innerHTML = `
-                    <div class="ai-title">✨ AI 인사이트 · 한국어 실행 가이드</div>
+                    <div class="ai-title">✨ AI Insight · Tech Decision Card</div>
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <button class="ai-btn" onclick="generateAISummary('${repo.id}')" id="aiBtn-${repo.id}">🔄 다시 분석</button>
+                        <button class="ai-btn" onclick="generateAISummary('${repo.id}')" id="aiBtn-${repo.id}">🔄 Re-Analyze</button>
                     </div>
                 `;
 
