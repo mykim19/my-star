@@ -802,6 +802,49 @@
             background: #f1f5f9;
         }
 
+        /* Compact Icon Buttons */
+        .d-btn-icon {
+            width: 48px;
+            height: 48px;
+            padding: 0;
+            border: 2px solid #e2e8f0;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.4rem;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .d-btn-icon:hover {
+            transform: scale(1.1);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+        }
+
+        .d-btn-icon.use_now.active {
+            background: #dbeafe;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px #bfdbfe;
+        }
+
+        .d-btn-icon.integrate.active {
+            background: #dcfce7;
+            border-color: #4ade80;
+            box-shadow: 0 0 0 3px #bbf7d0;
+        }
+
+        .d-btn-icon.reference.active {
+            background: #fef9c3;
+            border-color: #facc15;
+            box-shadow: 0 0 0 3px #fef08a;
+        }
+
+        .d-btn-icon.archive.active {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+            box-shadow: 0 0 0 3px #e5e7eb;
+        }
+
         .d-btn.use_now.active {
             background: #dbeafe;
             border-color: #60a5fa;
@@ -3297,21 +3340,23 @@
 
             return `
                 <div class="user-data-section">
-                    <!-- Implementation Snapshot (Action Buttons) -->
-                    <div class="decision-toggle-group">
-                        <label class="decision-label" style="display:flex; justify-content:space-between; align-items:center;">
-                            <span>Implementation Snapshot</span>
-                            <span style="font-size:0.8rem; color:#6b7280; font-weight:normal;">What will you do?</span>
-                        </label>
-                        <div class="toggle-container implementation-actions">
-                            <button class="d-btn use_now ${decisionValue === 'use_now' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'use_now')" title="지금 바로 사용! 당장 프로젝트에 적용할 도구">🚀 Use Now</button>
-                            <button class="d-btn integrate ${decisionValue === 'integrate' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'integrate')" title="통합 검토 중. 다음 스프린트에 도입 예정">🏗 Integrate</button>
-                            <button class="d-btn reference ${decisionValue === 'reference' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'reference')" title="참고용 보관. 나중에 필요할 때 찾아볼 자료">📚 Reference</button>
-                            <button class="d-btn archive ${decisionValue === 'archive' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'archive')" title="보관함. 검토했으나 지금은 불필요">📦 Archive</button>
-                        </div>
+                    <!-- AI Section (Top) -->
+                    <div class="ai-section" id="aiHeader-${repo.id}">
+                        ${aiData ? `
+                            <div class="ai-title">✨ AI Insight · Tech Decision Card</div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <button class="ai-btn" onclick="generateAISummary('${repo.id}')" id="aiBtn-${repo.id}">🔄 Re-Analyze</button>
+                            </div>
+                        ` : `
+                            <button class="ai-btn" onclick="generateAISummary('${repo.id}')" id="aiBtn-${repo.id}">✨ Analyze with AI</button>
+                        `}
+                    </div>
+                    <div id="aiContent-${repo.id}" class="ai-content">
+                        ${aiContent}
                     </div>
 
-                    <h3>My Data</h3>
+                    <!-- My Data -->
+                    <h3 style="margin-top:16px;">My Data</h3>
                     <div class="form-group">
                         <label>Target Project</label>
                         <select id="repoPurpose" class="form-control">
@@ -3348,19 +3393,18 @@
                          </div>
                     </div>
 
-                    <!-- AI Section -->
-                    <div class="ai-section" id="aiHeader-${repo.id}">
-                        ${aiData ? `
-                            <div class="ai-title">✨ AI Insight · Tech Decision Card</div>
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <button class="ai-btn" onclick="generateAISummary('${repo.id}')" id="aiBtn-${repo.id}">🔄 Re-Analyze</button>
-                            </div>
-                        ` : `
-                            <button class="ai-btn" onclick="generateAISummary('${repo.id}')" id="aiBtn-${repo.id}">✨ Analyze with AI</button>
-                        `}
-                    </div>
-                    <div id="aiContent-${repo.id}" class="ai-content">
-                        ${aiContent}
+                    <!-- Implementation Snapshot (Bottom - Final Decision) -->
+                    <div class="decision-toggle-group" style="background:#f8fafc; border-radius:8px; padding:12px; margin-top:16px; border:1px solid #e2e8f0;">
+                        <label class="decision-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <span style="font-weight:600; font-size:0.85rem;">📌 My Decision</span>
+                            <span style="font-size:0.75rem; color:#6b7280;">이 도구를 어떻게 할까요?</span>
+                        </label>
+                        <div class="toggle-container implementation-actions" style="display:flex; justify-content:center; gap:12px;">
+                            <button class="d-btn-icon use_now ${decisionValue === 'use_now' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'use_now')" title="🚀 지금 사용! 당장 프로젝트에 적용">🚀</button>
+                            <button class="d-btn-icon integrate ${decisionValue === 'integrate' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'integrate')" title="🏗 통합 검토 중. 다음 스프린트에 도입 예정">🏗</button>
+                            <button class="d-btn-icon reference ${decisionValue === 'reference' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'reference')" title="📚 참고용. 나중에 필요할 때 찾아볼 자료">📚</button>
+                            <button class="d-btn-icon archive ${decisionValue === 'archive' ? 'active' : ''}" onclick="saveDecision('${repo.id}', 'archive')" title="📦 보관함. 검토했으나 지금은 불필요">📦</button>
+                        </div>
                     </div>
                 </div>
             `;
